@@ -35,21 +35,27 @@
         .brand-container {
             display: flex;
             align-items: center;
-            gap: 16px; 
+            gap: 12px; 
         }
 
-        /* Zero-Distortion Logo Fix - Displays the image exactly at its native resolution */
+        /* 🚀 ULTIMATE CRISP LOGO FIX - No Blur, No Pixelation */
         .app-logo {
-            width: auto;
-            height: auto;
-            max-width: 100%;
-            display: inline-block;
-            vertical-align: middle;
-            image-rendering: auto; /* Uses browser's native high-quality downscaling */
+            width: 36px;  /* Small size prevents the browser from stretching individual pixels */
+            height: 36px;
+            object-fit: contain;
+            
+            /* Force hardware acceleration & block browser smoothing */
+            transform: translateZ(0);
+            -webkit-font-smoothing: antialiased;
+            
+            image-rendering: -webkit-optimize-contrast; /* Safari / Chrome */
+            image-rendering: -moz-crisp-edges;         /* Firefox */
+            image-rendering: pixelated;                /* Universal fallback for sharpness */
+            display: block;
         }
 
         .app-title {
-            font-size: 26px;
+            font-size: 24px;
             font-weight: 700;
             letter-spacing: -0.5px;
             background: linear-gradient(135deg, #38BDF8, #0EA5E9); 
@@ -144,7 +150,6 @@
 
     <header>
         <div class="brand-container">
-            <!-- ইমেজ ফাইলটির নাম ফোল্ডার অনুযায়ী পরিবর্তন করতে পারেন -->
             <img src="1000227687_2.jpg" alt="StableMind Logo" class="app-logo">
             <span class="app-title">StableMind</span>
         </div>
