@@ -23,7 +23,7 @@
 
         /* Navigation Header */
         header {
-            background-color: #0F141C; /* Balanced dark element color */
+            background-color: #0F141C; 
             padding: 16px 32px;
             display: flex;
             align-items: center;
@@ -35,24 +35,24 @@
         .brand-container {
             display: flex;
             align-items: center;
-            gap: 16px; /* Space between logo and text */
+            gap: 16px; 
         }
 
-        /* High Definition Logo Fix - Prevents Pixelation */
+        /* Zero-Distortion Logo Fix - Displays the image exactly at its native resolution */
         .app-logo {
-            max-height: 50px; /* Perfectly scales the logo */
-            width: auto;      /* Keeps the original aspect ratio */
-            object-fit: contain;
-            image-rendering: -webkit-optimize-contrast; /* Sharpens the image in Safari/Chrome */
-            image-rendering: high-quality;             /* Standard high quality rendering */
-            display: block;
+            width: auto;
+            height: auto;
+            max-width: 100%;
+            display: inline-block;
+            vertical-align: middle;
+            image-rendering: auto; /* Uses browser's native high-quality downscaling */
         }
 
         .app-title {
             font-size: 26px;
             font-weight: 700;
             letter-spacing: -0.5px;
-            background: linear-gradient(135deg, #38BDF8, #0EA5E9); /* Premium AI Sky-Blue gradient */
+            background: linear-gradient(135deg, #38BDF8, #0EA5E9); 
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -144,7 +144,7 @@
 
     <header>
         <div class="brand-container">
-            <!-- ইমেজ ফাইলটি আপনার ডিরেক্টরিতে "1000227687_2.jpg" নামে থাকলে নিচের নামটি ঠিক থাকবে -->
+            <!-- ইমেজ ফাইলটির নাম ফোল্ডার অনুযায়ী পরিবর্তন করতে পারেন -->
             <img src="1000227687_2.jpg" alt="StableMind Logo" class="app-logo">
             <span class="app-title">StableMind</span>
         </div>
