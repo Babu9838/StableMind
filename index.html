@@ -14,7 +14,7 @@
         }
 
         body {
-            background-color: #05070B; /* Deepest premium dark background */
+            background-color: #05070B; /* Pure Premium Ultra-Dark */
             color: #F3F4F6;
             min-height: 100vh;
             display: flex;
@@ -23,7 +23,7 @@
 
         /* Navigation Header */
         header {
-            background-color: #0B0F17; /* Solid pure dark elements */
+            background-color: #0B0F17; 
             padding: 16px 32px;
             display: flex;
             align-items: center;
@@ -38,19 +38,24 @@
             gap: 16px; 
         }
 
-        /* Perfected Arc Logo Frame */
+        /* 🛠️ HARDWARE ACCELERATED & CRISP IMAGE RENDERING */
         .app-logo {
-            width: 44px;  
-            height: 44px;
-            object-fit: cover;
-            border-radius: 10px; /* Elegant slightly rounded corners for the logo card */
+            width: 46px;  
+            height: 46px;
+            object-fit: contain;
+            border-radius: 8px;
             display: block;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            
+            /* Anti-blur & Anti-aliasing for high contrast dark mode */
+            image-rendering: -webkit-optimize-contrast; /* Chrome, Safari, Opera */
+            image-rendering: -moz-crisp-edges;         /* Firefox */
+            image-rendering: crisp-edges;               /* Standard */
+            transform: translateZ(0);                   /* Force GPU execution */
         }
 
         /* Enriched & Larger Brand Title */
         .app-title {
-            font-size: 32px; /* Made bigger as requested */
+            font-size: 32px; 
             font-weight: 800;
             letter-spacing: -0.8px;
             background: linear-gradient(135deg, #38BDF8, #0EA5E9); 
@@ -108,7 +113,7 @@
         }
 
         .card {
-            background-color: #0B0F17; /* Matching rich dark container */
+            background-color: #0B0F17; 
             padding: 24px;
             border-radius: 14px;
             border: 1px solid #161F30;
@@ -145,8 +150,28 @@
 
     <header>
         <div class="brand-container">
-            <!-- Using your high-quality reference image file -->
+            <!-- অপশন A: আপনার ইমেজ ফাইলটি রেন্ডার করার ক্রিস্প কোড -->
             <img src="1000227687_3.jpg" alt="StableMind Logo" class="app-logo">
+            
+            <!-- 💡 অপশন B (যদি ইমেজ তাও সামান্য ব্লার লাগে): নিচের কমেন্ট করা SVG কোডটি ইমেজ ট্যাগের বদলে ব্যবহার করুন। এটি কোনোদিনও ফাটবে না। -->
+            <!-- 
+            <svg width="46" height="46" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg" style="border-radius: 8px;">
+                <rect width="400" height="400" fill="#0B132B"/>
+                <path d="M200 45C115 45 65 140 65 260C65 310 75 355 75 355H125C125 355 115 310 115 260C115 170 150 110 200 110C250 110 285 170 285 260C285 310 275 355 275 355H325C325 355 335 310 335 260C335 140 285 45 200 45Z" fill="url(#paint0_linear)"/>
+                <path d="M190 260H290C290 260 285 290 265 310H170L190 260Z" fill="url(#paint1_linear)"/>
+                <defs>
+                    <linearGradient id="paint0_linear" x1="200" y1="45" x2="200" y2="355" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stop-color="#FFFFFF"/>
+                        <stop offset="100%" stop-color="#A5B4FC"/>
+                    </linearGradient>
+                    <linearGradient id="paint1_linear" x1="230" y1="260" x2="230" y2="310" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stop-color="#FFFFFF"/>
+                        <stop offset="100%" stop-color="#818CF8"/>
+                    </linearGradient>
+                </defs>
+            </svg> 
+            -->
+
             <span class="app-title">StableMind</span>
         </div>
         <nav>
