@@ -40,12 +40,18 @@
 
         /* Enriched & Larger Brand Title */
         .app-title {
-            font-size: 34px; /* Made even more prominent and crisp */
+            font-size: 34px; 
             font-weight: 800;
             letter-spacing: -0.8px;
             background: linear-gradient(135deg, #38BDF8, #0EA5E9); 
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+        }
+
+        .nav-container {
+            display: flex;
+            align-items: center;
+            gap: 32px;
         }
 
         .nav-links {
@@ -64,6 +70,25 @@
 
         .nav-links a:hover, .nav-links a.active {
             color: #38BDF8;
+        }
+
+        /* Header Connect Wallet Button */
+        .btn-connect {
+            background: linear-gradient(135deg, #0EA5E9, #2563EB);
+            color: #FFFFFF;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
+        }
+
+        .btn-connect:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(14, 165, 233, 0.4);
         }
 
         /* Dashboard Main Layout */
@@ -91,14 +116,16 @@
             font-size: 16px;
         }
 
+        /* Stats Grid */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 24px;
+            margin-bottom: 32px;
         }
 
         .card {
-            background-color: #090D14; /* Matching dark container */
+            background-color: #090D14; 
             padding: 24px;
             border-radius: 14px;
             border: 1px solid #111823;
@@ -129,49 +156,129 @@
             color: #34D399; 
             margin-top: 6px;
         }
+
+        /* 🌐 New Wallet Management Section */
+        .wallet-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 24px;
+            margin-top: 12px;
+        }
+
+        .wallet-card {
+            background: linear-gradient(145deg, #090D14, #06090F);
+            border: 1px solid #161F30;
+            border-radius: 16px;
+            padding: 28px;
+        }
+
+        .wallet-card h2 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #FFFFFF;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .wallet-card p {
+            color: #9CA3AF;
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+
+        .status-box {
+            background-color: #030508;
+            border: 1px solid #161F30;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-label {
+            font-size: 13px;
+            color: #9CA3AF;
+        }
+
+        .status-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #EF4444; /* Default: Disconnected */
+        }
+
+        .status-value.connected {
+            color: #34D399; /* Green when connected */
+        }
+
+        .btn-wallet-action {
+            width: 100%;
+            background-color: transparent;
+            color: #FFFFFF;
+            border: 1px solid #38BDF8;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-wallet-action:hover {
+            background-color: rgba(56, 189, 248, 0.1);
+            border-color: #0EA5E9;
+        }
+
+        .btn-circle {
+            background: linear-gradient(135deg, #0052FF, #103178);
+            border: none;
+            box-shadow: 0 4px 12px rgba(0, 82, 255, 0.2);
+        }
+
+        .btn-circle:hover {
+            background: linear-gradient(135deg, #1A66FF, #133B91);
+            transform: translateY(-1px);
+        }
     </style>
 </head>
 <body>
 
     <header>
         <div class="brand-container">
-            <!-- 🚀 PURE VECTOR LOGO: This will NEVER blur or pixelate on any screen -->
+            <!-- 🚀 PURE VECTOR LOGO (Never Blurs) -->
             <svg width="46" height="46" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="border-radius: 10px; display: block; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
-                <!-- Background Gradient matching the reference layout -->
                 <rect width="100" height="100" fill="url(#bg_gradient)"/>
-                
-                <!-- The Perfect Arc Shape with mathematically sharp paths -->
                 <path d="M50 15C31.5 15 19 36 19 63C19 72.5 21 82 21 82H32C32 82 29.5 73.5 29.5 63C29.5 42.5 38 29.5 50 29.5C62 29.5 70.5 42.5 70.5 63C70.5 73.5 68 82 68 82H79C79 82 81 72.5 81 63C81 36 68.5 15 50 15Z" fill="url(#arc_gradient)"/>
-                
-                <!-- Inside Hook / Dynamic Curve of Arc Logo -->
                 <path d="M47 62.5H71.5C70.5 68.5 67 73.5 62 76.5H42.5L47 62.5Z" fill="url(#arc_gradient)"/>
-                
                 <defs>
-                    <!-- Premium Deep Blue Gradient for the Logo Background -->
                     <linearGradient id="bg_gradient" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
                         <stop offset="0%" stop-color="#021027"/>
                         <stop offset="50%" stop-color="#0B1A30"/>
                         <stop offset="100%" stop-color="#142B4E"/>
                     </linearGradient>
-                    <!-- Crisp White-Silver Shimmer for the Main Arc Icon -->
                     <linearGradient id="arc_gradient" x1="50" y1="15" x2="50" y2="82" gradientUnits="userSpaceOnUse">
                         <stop offset="0%" stop-color="#FFFFFF"/>
-                        <stop offset="60%" stop-color="#E2E8F0"/>
                         <stop offset="100%" stop-color="#CBD5E1"/>
                     </linearGradient>
                 </defs>
             </svg>
-
             <span class="app-title">StableMind</span>
         </div>
-        <nav>
-            <ul class="nav-links">
-                <li><a href="#" class="active">Dashboard</a></li>
-                <li><a href="#">AI Agent</a></li>
-                <li><a href="#">USDC Vaults</a></li>
-                <li><a href="#">Transactions</a></li>
-            </ul>
-        </nav>
+        
+        <div class="nav-container">
+            <nav>
+                <ul class="nav-links">
+                    <li><a href="#" class="active">Dashboard</a></li>
+                    <li><a href="#">AI Agent</a></li>
+                    <li><a href="#">USDC Vaults</a></li>
+                    <li><a href="#">Transactions</a></li>
+                </ul>
+            </nav>
+            <!-- Real Wallet Connect Trigger -->
+            <button class="btn-connect" id="connectWalletBtn" onclick="toggleWalletConnect()">Connect Wallet</button>
+        </div>
     </header>
 
     <main class="dashboard-container">
@@ -180,10 +287,11 @@
             <p>Optimize your stablecoin yield using automated AI strategies on Arc Network.</p>
         </section>
 
+        <!-- Stats Overview -->
         <div class="stats-grid">
             <div class="card">
                 <h3>Total USDC Balance</h3>
-                <div class="value">$10,450.00</div>
+                <div class="value" id="usdcBalance">$10,450.00</div>
                 <div class="subtext">Unified Balance Active</div>
             </div>
             <div class="card">
@@ -197,7 +305,106 @@
                 <div class="subtext">Monitoring Arc Network</div>
             </div>
         </div>
+
+        <!-- 🌐 Wallet Management Panel (WaaS & WalletConnect) -->
+        <div class="wallet-section">
+            
+            <!-- Circle Programmable Web3 Wallet (WaaS) -->
+            <div class="wallet-card">
+                <h2>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle;"><circle cx="12" cy="12" r="10" stroke="#0052FF" stroke-width="2.5"/><circle cx="12" cy="12" r="4" fill="#0052FF"/></svg>
+                    Circle Programmable Wallet
+                </h2>
+                <p>Create an autonomous, gasless smart contract account powered by Circle WaaS.</p>
+                
+                <div class="status-box">
+                    <span class="status-label">WaaS Account Status</span>
+                    <span class="status-value" id="circleStatus">Not Initialized</span>
+                </div>
+                <div class="status-box" style="margin-top: -10px;">
+                    <span class="status-label">Programmable Address</span>
+                    <span class="status-label" id="circleAddress" style="font-family: monospace; color: #38BDF8;">0x0000...0000</span>
+                </div>
+                
+                <button class="btn-wallet-action btn-circle" onclick="initializeCircleWallet()">Initialize User-Controlled Wallet</button>
+            </div>
+
+            <!-- External Wallet (WalletConnect / Web3) -->
+            <div class="wallet-card">
+                <h2>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h11"/><path d="M16 12h6"/><circle cx="19" cy="12" r="2"/></svg>
+                    External Web3 Provider
+                </h2>
+                <p>Connect your personal hardware or browser extension wallet via WalletConnect.</p>
+                
+                <div class="status-box">
+                    <span class="status-label">Connection Status</span>
+                    <span class="status-value" id="externalStatus">Disconnected</span>
+                </div>
+                <div class="status-box" style="margin-top: -10px;">
+                    <span class="status-label">Connected Address</span>
+                    <span class="status-label" id="externalAddress" style="font-family: monospace; color: #9CA3AF;">Not Connected</span>
+                </div>
+                
+                <button class="btn-wallet-action" id="controlWalletActionBtn" onclick="toggleWalletConnect()">Link External Wallet</button>
+            </div>
+
+        </div>
     </main>
+
+    <!-- 🌐 Dynamic Interaction Logic (JavaScript) -->
+    <script>
+        let isConnected = false;
+
+        // Mocking Real External Wallet Connection (WalletConnect / MetaMask Style)
+        function toggleWalletConnect() {
+            const headerBtn = document.getElementById('connectWalletBtn');
+            const panelBtn = document.getElementById('controlWalletActionBtn');
+            const statusVal = document.getElementById('externalStatus');
+            const addressVal = document.getElementById('externalAddress');
+
+            if (!isConnected) {
+                // Simulate successful connection
+                isConnected = true;
+                headerBtn.innerText = "0x7F...4C91";
+                headerBtn.style.background = "#111823";
+                headerBtn.style.border = "1px solid #34D399";
+                
+                panelBtn.innerText = "Disconnect Wallet";
+                statusVal.innerText = "Connected";
+                statusVal.className = "status-value connected";
+                addressVal.innerText = "0x7F392b9503A43632918814731835742407F54C91";
+                addressVal.style.color = "#34D399";
+            } else {
+                // Disconnect
+                isConnected = false;
+                headerBtn.innerText = "Connect Wallet";
+                headerBtn.style.background = "linear-gradient(135deg, #0EA5E9, #2563EB)";
+                headerBtn.style.border = "none";
+                
+                panelBtn.innerText = "Link External Wallet";
+                statusVal.innerText = "Disconnected";
+                statusVal.className = "status-value";
+                addressVal.innerText = "Not Connected";
+                addressVal.style.color = "#9CA3AF";
+            }
+        }
+
+        // Mocking Circle WaaS Programmable Wallet Generation
+        function initializeCircleWallet() {
+            const circleStatus = document.getElementById('circleStatus');
+            const circleAddress = document.getElementById('circleAddress');
+            
+            circleStatus.innerText = "Creating session...";
+            circleStatus.style.color = "#F59E0B"; // Orange loading state
+
+            setTimeout(() => {
+                circleStatus.innerText = "Active (Secured)";
+                circleStatus.className = "status-value connected";
+                circleAddress.innerText = "0x2a6cCc1195679A2B20a89dE77A7d3407B0F3F19c";
+            }, 1200); // Quick simulation of generation
+        }
+    </script>
 
 </body>
 </html>
