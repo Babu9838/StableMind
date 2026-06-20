@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StableMind - Dashboard</title>
+    <style>
+        /* Base Styling & Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: #080B10; /* Ultra-premium deep dark background */
+            color: #F3F4F6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Navigation Header */
+        header {
+            background-color: #0F141C; /* Balanced dark element color */
+            padding: 16px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #1F293D;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .brand-container {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        /* Advanced crisp imaging to prevent any blur */
+        .app-logo {
+            height: 42px;
+            width: 42px;
+            object-fit: contain;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+            border-radius: 8px;
+            display: block;
+        }
+
+        .app-title {
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #38BDF8, #0EA5E9); /* Premium AI Sky-Blue gradient */
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 24px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: #9CA3AF;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 15px;
+            transition: color 0.2s ease;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            color: #38BDF8;
+        }
+
+        /* Dashboard Main Layout */
+        .dashboard-container {
+            padding: 40px 32px;
+            max-width: 1280px;
+            width: 100%;
+            margin: 0 auto;
+            flex: 1;
+        }
+
+        .welcome-section {
+            margin-bottom: 36px;
+        }
+
+        .welcome-section h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #FFFFFF;
+        }
+
+        .welcome-section p {
+            color: #9CA3AF;
+            font-size: 16px;
+        }}
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .card {
+            background-color: #0F141C;
+            padding: 24px;
+            border-radius: 14px;
+            border: 1px solid #1F293D;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            border-color: #38BDF8;
+        }
+
+        .card h3 {
+            color: #9CA3AF;
+            font-size: 13px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .card .value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #38BDF8;
+        }
+
+        .card .subtext {
+            font-size: 13px;
+            color: #34D399; /* Emerald Green look */
+            margin-top: 6px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand-container">
+            <img src="1000227687.jpg" alt="StableMind Logo" class="app-logo">
+            <span class="app-title">StableMind</span>
+        </div>
+        <nav>
+            <ul class="nav-links">
+                <li><a href="#" class="active">Dashboard</a></li>
+                <li><a href="#">AI Agent</a></li>
+                <li><a href="#">USDC Vaults</a></li>
+                <li><a href="#">Transactions</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="dashboard-container">
+        <section class="welcome-section">
+            <h1>Welcome to StableMind Agentic Portal</h1>
+            <p>Optimize your stablecoin yield using automated AI strategies on Arc Network.</p>
+        </section>
+
+        <div class="stats-grid">
+            <div class="card">
+                <h3>Total USDC Balance</h3>
+                <div class="value">$10,450.00</div>
+                <div class="subtext">Unified Balance Active</div>
+            </div>
+            <div class="card">
+                <h3>AI Strategy APY</h3>
+                <div class="value">12.4%</div>
+                <div class="subtext">Optimized by StableMind AI</div>
+            </div>
+            <div class="card">
+                <h3>Active Autonomous Agents</h3>
+                <div class="value">2</div>
+                <div class="subtext">Monitoring Arc Network</div>
+            </div>
+        </div>
+    </main>
+
+</body>
+  </html>
+  
