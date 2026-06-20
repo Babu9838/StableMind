@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StableMind - Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.1/ethers.umd.min.js"></script>
+    
     <style>
         /* Base Styling & Reset */
         * {
@@ -153,11 +155,11 @@
 
         .card .subtext {
             font-size: 13px;
-            color: #34D399; 
+            color: #9CA3AF; 
             margin-top: 6px;
         }
 
-        /* Wallet Management Panel */
+        /* 🌐 Wallet Management Panel */
         .wallet-section {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
@@ -304,6 +306,7 @@
         </div>
 
         <div class="wallet-section">
+            
             <div class="wallet-card">
                 <h2>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle;"><circle cx="12" cy="12" r="10" stroke="#0052FF" stroke-width="2.5"/><circle cx="12" cy="12" r="4" fill="#0052FF"/></svg>
@@ -337,36 +340,44 @@
                 </div>
                 <button class="btn-wallet-action" id="controlWalletActionBtn" onclick="connectMetaMask()">Link MetaMask Wallet</button>
             </div>
+
         </div>
     </main>
 
     <script>
-        // Arc Testnet Configuration Parameters
-        const ARC_TESTNET_HEX_ID = '0x2711'; // Example Hex (Modify based on Arc Net specs)
-        // 🌟 PASTE YOUR ARC TESTNET USDC CONTRACT ADDRESS HERE
-        const USDC_CONTRACT_ADDRESS = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174'; 
+        const ARC_TESTNET_HEX_ID = '0x2711'; // Chain ID Hex
+        const USDC_CONTRACT_ADDRESS = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174'; // Paste Arc USDC contract address here
 
-        let userAddress = null;
+        let provider = null;
+        let signer = null;
 
         async function connectMetaMask() {
-            if (typeof window.ethereum !== 'undefined') {
+            // Check if MetaMask is active in window object
+            if (window.ethereum) {
                 try {
-                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                    userAddress = accounts[0];
+                    // 🚀 Ethers.js forces a native Web3 Browser Popup safely
+                    provider = new ethers.BrowserProvider(window.ethereum);
                     
-                    // Trigger Live Chain Verification and Update
+                    // Request accounts (This triggers the MetaMask window instantly)
+                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    const userAddress = accounts[0];
+                    
+                    signer = await provider.getSigner();
+
+                    // Network Handling & Dynamic Verification
                     await checkAndSwitchToArcTestnet();
                     await fetchRealUSDCBalance(userAddress);
+
                 } catch (error) {
-                    alert("Connection rejected.");
-                    console.error(error);
+                    console.error("MetaMask connection failed or rejected:", error);
+                    alert("Wallet connection popup closed or rejected.");
                 }
             } else {
-                alert("Please install MetaMask extension.");
+                alert("MetaMask browser extension not detected. Please install it to connect.");
+                window.open('https://metamask.io/', '_blank');
             }
         }
 
-        // Automatic Check & Dynamic Network Addition for Arc Testnet
         async function checkAndSwitchToArcTestnet() {
             try {
                 await window.ethereum.request({
@@ -374,7 +385,6 @@
                     params: [{ chainId: ARC_TESTNET_HEX_ID }],
                 });
             } catch (switchError) {
-                // If network doesn't exist in MetaMask, add it automatically
                 if (switchError.code === 4902) {
                     try {
                         await window.ethereum.request({
@@ -383,48 +393,41 @@
                                 chainId: ARC_TESTNET_HEX_ID,
                                 chainName: 'Arc Testnet',
                                 nativeCurrency: { name: 'ARC', symbol: 'ARC', decimals: 18 },
-                                rpcUrls: ['https://rpc-testnet.arc.network'], // Placeholder Testnet RPC URL
+                                rpcUrls: ['https://rpc-testnet.arc.network'], 
                                 blockExplorerUrls: ['https://explorer-testnet.arc.network']
                             }],
                         });
                     } catch (addError) {
-                        console.error("Could not add network", addError);
+                        console.error("Error adding network:", addError);
                     }
                 }
             }
         }
 
-        // Fetch Real Live USDC Balance using Standard ERC-20 hex encoding
         async function fetchRealUSDCBalance(address) {
             try {
-                // balanceOf function signature hash: 0x70a08231 + 32-byte padded address
-                const cleanAddress = address.substring(2).padStart(64, '0');
-                const dataParam = '0x70a08231' + cleanAddress;
+                // ERC-20 Minimal BalanceOf ABI compiled via Ethers.js data parser
+                const minABI = ["function balanceOf(address owner) view returns (uint256)"];
+                const contract = new ethers.Contract(USDC_CONTRACT_ADDRESS, minABI, provider);
+                
+                // Get absolute real cryptographic value from chain
+                const balance = await contract.balanceOf(address);
+                
+                // Format token base decimals (Change to 18 if testnet USDC uses 18 instead of 6)
+                const formattedBalance = ethers.formatUnits(balance, 6); 
 
-                const rawBalance = await window.ethereum.request({
-                    method: 'eth_call',
-                    params: [{
-                        to: USDC_CONTRACT_ADDRESS,
-                        data: dataParam
-                    }, 'latest']
-                });
-
-                // Parse Hex response safely to standard number format
-                const bigIntValue = BigInt(rawBalance);
-                // USDC typically uses 6 decimals or 18 decimals depending on deployment setup
-                const formattedBalance = Number(bigIntValue) / 10**6; 
-
-                // Dynamic UI Mutation
-                document.getElementById('usdcBalance').innerText = `$${formattedBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+                // Inject live dynamic stats inside UI Card
+                document.getElementById('usdcBalance').innerText = `$${parseFloat(formattedBalance).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
                 document.getElementById('balanceStatus').innerText = "Live Arc Testnet Balance Verified";
                 document.getElementById('balanceStatus').style.color = "#34D399";
                 
                 updateUIConnected(address);
             } catch (err) {
-                console.error("Error reading blockchain balance", err);
+                console.error("Blockchain read failure:", err);
                 document.getElementById('usdcBalance').innerText = "$0.00";
-                document.getElementById('balanceStatus').innerText = "Failed to load token balance";
+                document.getElementById('balanceStatus').innerText = "Connected (Failed to fetch USDC)";
                 document.getElementById('balanceStatus').style.color = "#EF4444";
+                updateUIConnected(address);
             }
         }
 
@@ -456,6 +459,17 @@
                 circleStatus.className = "status-value connected";
                 circleAddress.innerText = "0x2a6cCc1195679A2B20a89dE77A7d3407B0F3F19c";
             }, 1200); 
+        }
+
+        // Auto reload or catch state change inside extension
+        if (window.ethereum) {
+            window.ethereum.on('accountsChanged', function (accounts) {
+                if(accounts.length > 0) {
+                    connectMetaMask();
+                } else {
+                    location.reload();
+                }
+            });
         }
     </script>
 </body>
