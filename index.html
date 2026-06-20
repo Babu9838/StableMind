@@ -157,7 +157,7 @@
             margin-top: 6px;
         }
 
-        /* 🌐 New Wallet Management Section */
+        /* 🌐 Wallet Management Panel */
         .wallet-section {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
@@ -247,7 +247,7 @@
 
     <header>
         <div class="brand-container">
-            <!-- 🚀 PURE VECTOR LOGO (Never Blurs) -->
+            <!-- 🚀 PURE VECTOR LOGO -->
             <svg width="46" height="46" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="border-radius: 10px; display: block; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
                 <rect width="100" height="100" fill="url(#bg_gradient)"/>
                 <path d="M50 15C31.5 15 19 36 19 63C19 72.5 21 82 21 82H32C32 82 29.5 73.5 29.5 63C29.5 42.5 38 29.5 50 29.5C62 29.5 70.5 42.5 70.5 63C70.5 73.5 68 82 68 82H79C79 82 81 72.5 81 63C81 36 68.5 15 50 15Z" fill="url(#arc_gradient)"/>
@@ -276,8 +276,8 @@
                     <li><a href="#">Transactions</a></li>
                 </ul>
             </nav>
-            <!-- Real Wallet Connect Trigger -->
-            <button class="btn-connect" id="connectWalletBtn" onclick="toggleWalletConnect()">Connect Wallet</button>
+            <!-- Real MetaMask Trigger Button -->
+            <button class="btn-connect" id="connectWalletBtn" onclick="connectMetaMask()">Connect Wallet</button>
         </div>
     </header>
 
@@ -306,7 +306,7 @@
             </div>
         </div>
 
-        <!-- 🌐 Wallet Management Panel (WaaS & WalletConnect) -->
+        <!-- Wallet Management Panel -->
         <div class="wallet-section">
             
             <!-- Circle Programmable Web3 Wallet (WaaS) -->
@@ -329,13 +329,13 @@
                 <button class="btn-wallet-action btn-circle" onclick="initializeCircleWallet()">Initialize User-Controlled Wallet</button>
             </div>
 
-            <!-- External Wallet (WalletConnect / Web3) -->
+            <!-- External MetaMask Wallet -->
             <div class="wallet-card">
                 <h2>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h11"/><path d="M16 12h6"/><circle cx="19" cy="12" r="2"/></svg>
-                    External Web3 Provider
+                    MetaMask Web3 Provider
                 </h2>
-                <p>Connect your personal hardware or browser extension wallet via WalletConnect.</p>
+                <p>Connect your personal MetaMask browser extension to securely sign transactions.</p>
                 
                 <div class="status-box">
                     <span class="status-label">Connection Status</span>
@@ -346,48 +346,62 @@
                     <span class="status-label" id="externalAddress" style="font-family: monospace; color: #9CA3AF;">Not Connected</span>
                 </div>
                 
-                <button class="btn-wallet-action" id="controlWalletActionBtn" onclick="toggleWalletConnect()">Link External Wallet</button>
+                <button class="btn-wallet-action" id="controlWalletActionBtn" onclick="connectMetaMask()">Link MetaMask Wallet</button>
             </div>
 
         </div>
     </main>
 
-    <!-- 🌐 Dynamic Interaction Logic (JavaScript) -->
+    <!-- 🌐 Real MetaMask Integration JavaScript -->
     <script>
-        let isConnected = false;
+        let userAddress = null;
 
-        // Mocking Real External Wallet Connection (WalletConnect / MetaMask Style)
-        function toggleWalletConnect() {
+        // Function to handle Real MetaMask Connection & Popups
+        async function connectMetaMask() {
+            // Check if MetaMask is installed
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    // This triggers the actual MetaMask extension POPUP
+                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    userAddress = accounts[0];
+                    
+                    // Update UI States upon successful connection
+                    updateUIConnected(userAddress);
+                } catch (error) {
+                    // Handle user cancellation or rejection
+                    alert("Wallet connection rejected by user.");
+                    console.error("User rejected connection", error);
+                }
+            } else {
+                // If MetaMask is not installed, open an alert popup
+                alert("MetaMask is not installed! Please install the extension to use this feature.");
+                window.open('https://metamask.io/download/', '_blank');
+            }
+        }
+
+        function updateUIConnected(address) {
             const headerBtn = document.getElementById('connectWalletBtn');
             const panelBtn = document.getElementById('controlWalletActionBtn');
             const statusVal = document.getElementById('externalStatus');
             const addressVal = document.getElementById('externalAddress');
 
-            if (!isConnected) {
-                // Simulate successful connection
-                isConnected = true;
-                headerBtn.innerText = "0x7F...4C91";
-                headerBtn.style.background = "#111823";
-                headerBtn.style.border = "1px solid #34D399";
-                
-                panelBtn.innerText = "Disconnect Wallet";
-                statusVal.innerText = "Connected";
-                statusVal.className = "status-value connected";
-                addressVal.innerText = "0x7F392b9503A43632918814731835742407F54C91";
-                addressVal.style.color = "#34D399";
-            } else {
-                // Disconnect
-                isConnected = false;
-                headerBtn.innerText = "Connect Wallet";
-                headerBtn.style.background = "linear-gradient(135deg, #0EA5E9, #2563EB)";
-                headerBtn.style.border = "none";
-                
-                panelBtn.innerText = "Link External Wallet";
-                statusVal.innerText = "Disconnected";
-                statusVal.className = "status-value";
-                addressVal.innerText = "Not Connected";
-                addressVal.style.color = "#9CA3AF";
-            }
+            // Shorten the address for presentation (e.g., 0x1234...abcd)
+            const shortAddress = address.substring(0, 6) + "..." + address.substring(address.length - 4);
+            
+            headerBtn.innerText = shortAddress;
+            headerBtn.style.background = "#111823";
+            headerBtn.style.border = "1px solid #34D399";
+            
+            panelBtn.innerText = "MetaMask Linked";
+            panelBtn.disabled = true; // Optional: disable after connection
+            panelBtn.style.opacity = "0.6";
+            panelBtn.style.cursor = "not-allowed";
+
+            statusVal.innerText = "Connected";
+            statusVal.className = "status-value connected";
+            
+            addressVal.innerText = address;
+            addressVal.style.color = "#34D399";
         }
 
         // Mocking Circle WaaS Programmable Wallet Generation
@@ -396,13 +410,24 @@
             const circleAddress = document.getElementById('circleAddress');
             
             circleStatus.innerText = "Creating session...";
-            circleStatus.style.color = "#F59E0B"; // Orange loading state
+            circleStatus.style.color = "#F59E0B"; 
 
             setTimeout(() => {
                 circleStatus.innerText = "Active (Secured)";
                 circleStatus.className = "status-value connected";
                 circleAddress.innerText = "0x2a6cCc1195679A2B20a89dE77A7d3407B0F3F19c";
-            }, 1200); // Quick simulation of generation
+            }, 1200); 
+        }
+
+        // Optional: Listen for Account Changes in MetaMask
+        if (typeof window.ethereum !== 'undefined') {
+            window.ethereum.on('accountsChanged', function (accounts) {
+                if(accounts.length > 0) {
+                    updateUIConnected(accounts[0]);
+                } else {
+                    location.reload(); // Reload page if disconnected from extension
+                }
+            });
         }
     </script>
 
