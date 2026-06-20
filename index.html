@@ -14,7 +14,7 @@
         }
 
         body {
-            background-color: #05070B; /* Pure Premium Ultra-Dark */
+            background-color: #030508; /* Ultra-deep rich dark background */
             color: #F3F4F6;
             min-height: 100vh;
             display: flex;
@@ -23,13 +23,13 @@
 
         /* Navigation Header */
         header {
-            background-color: #0B0F17; 
-            padding: 16px 32px;
+            background-color: #090D14; /* Solid premium dark element */
+            padding: 14px 32px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            border-bottom: 1px solid #161F30;
-            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.6);
+            border-bottom: 1px solid #111823;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.7);
         }
 
         .brand-container {
@@ -38,24 +38,9 @@
             gap: 16px; 
         }
 
-        /* 🛠️ HARDWARE ACCELERATED & CRISP IMAGE RENDERING */
-        .app-logo {
-            width: 46px;  
-            height: 46px;
-            object-fit: contain;
-            border-radius: 8px;
-            display: block;
-            
-            /* Anti-blur & Anti-aliasing for high contrast dark mode */
-            image-rendering: -webkit-optimize-contrast; /* Chrome, Safari, Opera */
-            image-rendering: -moz-crisp-edges;         /* Firefox */
-            image-rendering: crisp-edges;               /* Standard */
-            transform: translateZ(0);                   /* Force GPU execution */
-        }
-
         /* Enriched & Larger Brand Title */
         .app-title {
-            font-size: 32px; 
+            font-size: 34px; /* Made even more prominent and crisp */
             font-weight: 800;
             letter-spacing: -0.8px;
             background: linear-gradient(135deg, #38BDF8, #0EA5E9); 
@@ -113,10 +98,10 @@
         }
 
         .card {
-            background-color: #0B0F17; 
+            background-color: #090D14; /* Matching dark container */
             padding: 24px;
             border-radius: 14px;
-            border: 1px solid #161F30;
+            border: 1px solid #111823;
             transition: transform 0.2s ease, border-color 0.2s ease;
         }
 
@@ -150,27 +135,32 @@
 
     <header>
         <div class="brand-container">
-            <!-- অপশন A: আপনার ইমেজ ফাইলটি রেন্ডার করার ক্রিস্প কোড -->
-            <img src="1000227687_3.jpg" alt="StableMind Logo" class="app-logo">
-            
-            <!-- 💡 অপশন B (যদি ইমেজ তাও সামান্য ব্লার লাগে): নিচের কমেন্ট করা SVG কোডটি ইমেজ ট্যাগের বদলে ব্যবহার করুন। এটি কোনোদিনও ফাটবে না। -->
-            <!-- 
-            <svg width="46" height="46" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg" style="border-radius: 8px;">
-                <rect width="400" height="400" fill="#0B132B"/>
-                <path d="M200 45C115 45 65 140 65 260C65 310 75 355 75 355H125C125 355 115 310 115 260C115 170 150 110 200 110C250 110 285 170 285 260C285 310 275 355 275 355H325C325 355 335 310 335 260C335 140 285 45 200 45Z" fill="url(#paint0_linear)"/>
-                <path d="M190 260H290C290 260 285 290 265 310H170L190 260Z" fill="url(#paint1_linear)"/>
+            <!-- 🚀 PURE VECTOR LOGO: This will NEVER blur or pixelate on any screen -->
+            <svg width="46" height="46" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="border-radius: 10px; display: block; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+                <!-- Background Gradient matching the reference layout -->
+                <rect width="100" height="100" fill="url(#bg_gradient)"/>
+                
+                <!-- The Perfect Arc Shape with mathematically sharp paths -->
+                <path d="M50 15C31.5 15 19 36 19 63C19 72.5 21 82 21 82H32C32 82 29.5 73.5 29.5 63C29.5 42.5 38 29.5 50 29.5C62 29.5 70.5 42.5 70.5 63C70.5 73.5 68 82 68 82H79C79 82 81 72.5 81 63C81 36 68.5 15 50 15Z" fill="url(#arc_gradient)"/>
+                
+                <!-- Inside Hook / Dynamic Curve of Arc Logo -->
+                <path d="M47 62.5H71.5C70.5 68.5 67 73.5 62 76.5H42.5L47 62.5Z" fill="url(#arc_gradient)"/>
+                
                 <defs>
-                    <linearGradient id="paint0_linear" x1="200" y1="45" x2="200" y2="355" gradientUnits="userSpaceOnUse">
-                        <stop offset="0%" stop-color="#FFFFFF"/>
-                        <stop offset="100%" stop-color="#A5B4FC"/>
+                    <!-- Premium Deep Blue Gradient for the Logo Background -->
+                    <linearGradient id="bg_gradient" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stop-color="#021027"/>
+                        <stop offset="50%" stop-color="#0B1A30"/>
+                        <stop offset="100%" stop-color="#142B4E"/>
                     </linearGradient>
-                    <linearGradient id="paint1_linear" x1="230" y1="260" x2="230" y2="310" gradientUnits="userSpaceOnUse">
+                    <!-- Crisp White-Silver Shimmer for the Main Arc Icon -->
+                    <linearGradient id="arc_gradient" x1="50" y1="15" x2="50" y2="82" gradientUnits="userSpaceOnUse">
                         <stop offset="0%" stop-color="#FFFFFF"/>
-                        <stop offset="100%" stop-color="#818CF8"/>
+                        <stop offset="60%" stop-color="#E2E8F0"/>
+                        <stop offset="100%" stop-color="#CBD5E1"/>
                     </linearGradient>
                 </defs>
-            </svg> 
-            -->
+            </svg>
 
             <span class="app-title">StableMind</span>
         </div>
