@@ -35,22 +35,21 @@
         .brand-container {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 16px; /* Space between logo and text */
         }
 
-        /* Advanced crisp imaging to prevent any blur */
+        /* High Definition Logo Fix - Prevents Pixelation */
         .app-logo {
-            height: 42px;
-            width: 42px;
+            max-height: 50px; /* Perfectly scales the logo */
+            width: auto;      /* Keeps the original aspect ratio */
             object-fit: contain;
-            image-rendering: -webkit-optimize-contrast;
-            image-rendering: crisp-edges;
-            border-radius: 8px;
+            image-rendering: -webkit-optimize-contrast; /* Sharpens the image in Safari/Chrome */
+            image-rendering: high-quality;             /* Standard high quality rendering */
             display: block;
         }
 
         .app-title {
-            font-size: 24px;
+            font-size: 26px;
             font-weight: 700;
             letter-spacing: -0.5px;
             background: linear-gradient(135deg, #38BDF8, #0EA5E9); /* Premium AI Sky-Blue gradient */
@@ -99,7 +98,7 @@
         .welcome-section p {
             color: #9CA3AF;
             font-size: 16px;
-        }}
+        }
 
         .stats-grid {
             display: grid;
@@ -136,7 +135,7 @@
 
         .card .subtext {
             font-size: 13px;
-            color: #34D399; /* Emerald Green look */
+            color: #34D399; 
             margin-top: 6px;
         }
     </style>
@@ -145,7 +144,8 @@
 
     <header>
         <div class="brand-container">
-            <img src="1000227687.jpg" alt="StableMind Logo" class="app-logo">
+            <!-- ইমেজ ফাইলটি আপনার ডিরেক্টরিতে "1000227687_2.jpg" নামে থাকলে নিচের নামটি ঠিক থাকবে -->
+            <img src="1000227687_2.jpg" alt="StableMind Logo" class="app-logo">
             <span class="app-title">StableMind</span>
         </div>
         <nav>
@@ -184,5 +184,4 @@
     </main>
 
 </body>
-  </html>
-  
+</html>
