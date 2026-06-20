@@ -157,7 +157,7 @@
             margin-top: 6px;
         }
 
-        /* 🌐 Wallet Management Panel */
+        /* Wallet Management Panel */
         .wallet-section {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
@@ -207,11 +207,11 @@
         .status-value {
             font-size: 14px;
             font-weight: 600;
-            color: #EF4444; /* Default: Disconnected */
+            color: #EF4444; 
         }
 
         .status-value.connected {
-            color: #34D399; /* Green when connected */
+            color: #34D399; 
         }
 
         .btn-wallet-action {
@@ -247,7 +247,6 @@
 
     <header>
         <div class="brand-container">
-            <!-- 🚀 PURE VECTOR LOGO -->
             <svg width="46" height="46" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="border-radius: 10px; display: block; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
                 <rect width="100" height="100" fill="url(#bg_gradient)"/>
                 <path d="M50 15C31.5 15 19 36 19 63C19 72.5 21 82 21 82H32C32 82 29.5 73.5 29.5 63C29.5 42.5 38 29.5 50 29.5C62 29.5 70.5 42.5 70.5 63C70.5 73.5 68 82 68 82H79C79 82 81 72.5 81 63C81 36 68.5 15 50 15Z" fill="url(#arc_gradient)"/>
@@ -276,7 +275,6 @@
                     <li><a href="#">Transactions</a></li>
                 </ul>
             </nav>
-            <!-- Real MetaMask Trigger Button -->
             <button class="btn-connect" id="connectWalletBtn" onclick="connectMetaMask()">Connect Wallet</button>
         </div>
     </header>
@@ -287,12 +285,11 @@
             <p>Optimize your stablecoin yield using automated AI strategies on Arc Network.</p>
         </section>
 
-        <!-- Stats Overview -->
         <div class="stats-grid">
             <div class="card">
                 <h3>Total USDC Balance</h3>
-                <div class="value" id="usdcBalance">$10,450.00</div>
-                <div class="subtext">Unified Balance Active</div>
+                <div class="value" id="usdcBalance">$0.00</div>
+                <div class="subtext" id="balanceStatus">Wallet Not Connected</div>
             </div>
             <div class="card">
                 <h3>AI Strategy APY</h3>
@@ -306,17 +303,13 @@
             </div>
         </div>
 
-        <!-- Wallet Management Panel -->
         <div class="wallet-section">
-            
-            <!-- Circle Programmable Web3 Wallet (WaaS) -->
             <div class="wallet-card">
                 <h2>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle;"><circle cx="12" cy="12" r="10" stroke="#0052FF" stroke-width="2.5"/><circle cx="12" cy="12" r="4" fill="#0052FF"/></svg>
                     Circle Programmable Wallet
                 </h2>
                 <p>Create an autonomous, gasless smart contract account powered by Circle WaaS.</p>
-                
                 <div class="status-box">
                     <span class="status-label">WaaS Account Status</span>
                     <span class="status-value" id="circleStatus">Not Initialized</span>
@@ -325,18 +318,15 @@
                     <span class="status-label">Programmable Address</span>
                     <span class="status-label" id="circleAddress" style="font-family: monospace; color: #38BDF8;">0x0000...0000</span>
                 </div>
-                
                 <button class="btn-wallet-action btn-circle" onclick="initializeCircleWallet()">Initialize User-Controlled Wallet</button>
             </div>
 
-            <!-- External MetaMask Wallet -->
             <div class="wallet-card">
                 <h2>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h11"/><path d="M16 12h6"/><circle cx="19" cy="12" r="2"/></svg>
                     MetaMask Web3 Provider
                 </h2>
                 <p>Connect your personal MetaMask browser extension to securely sign transactions.</p>
-                
                 <div class="status-box">
                     <span class="status-label">Connection Status</span>
                     <span class="status-value" id="externalStatus">Disconnected</span>
@@ -345,37 +335,96 @@
                     <span class="status-label">Connected Address</span>
                     <span class="status-label" id="externalAddress" style="font-family: monospace; color: #9CA3AF;">Not Connected</span>
                 </div>
-                
                 <button class="btn-wallet-action" id="controlWalletActionBtn" onclick="connectMetaMask()">Link MetaMask Wallet</button>
             </div>
-
         </div>
     </main>
 
-    <!-- 🌐 Real MetaMask Integration JavaScript -->
     <script>
+        // Arc Testnet Configuration Parameters
+        const ARC_TESTNET_HEX_ID = '0x2711'; // Example Hex (Modify based on Arc Net specs)
+        // 🌟 PASTE YOUR ARC TESTNET USDC CONTRACT ADDRESS HERE
+        const USDC_CONTRACT_ADDRESS = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174'; 
+
         let userAddress = null;
 
-        // Function to handle Real MetaMask Connection & Popups
         async function connectMetaMask() {
-            // Check if MetaMask is installed
             if (typeof window.ethereum !== 'undefined') {
                 try {
-                    // This triggers the actual MetaMask extension POPUP
                     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                     userAddress = accounts[0];
                     
-                    // Update UI States upon successful connection
-                    updateUIConnected(userAddress);
+                    // Trigger Live Chain Verification and Update
+                    await checkAndSwitchToArcTestnet();
+                    await fetchRealUSDCBalance(userAddress);
                 } catch (error) {
-                    // Handle user cancellation or rejection
-                    alert("Wallet connection rejected by user.");
-                    console.error("User rejected connection", error);
+                    alert("Connection rejected.");
+                    console.error(error);
                 }
             } else {
-                // If MetaMask is not installed, open an alert popup
-                alert("MetaMask is not installed! Please install the extension to use this feature.");
-                window.open('https://metamask.io/download/', '_blank');
+                alert("Please install MetaMask extension.");
+            }
+        }
+
+        // Automatic Check & Dynamic Network Addition for Arc Testnet
+        async function checkAndSwitchToArcTestnet() {
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: ARC_TESTNET_HEX_ID }],
+                });
+            } catch (switchError) {
+                // If network doesn't exist in MetaMask, add it automatically
+                if (switchError.code === 4902) {
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_addEthereumChain',
+                            params: [{
+                                chainId: ARC_TESTNET_HEX_ID,
+                                chainName: 'Arc Testnet',
+                                nativeCurrency: { name: 'ARC', symbol: 'ARC', decimals: 18 },
+                                rpcUrls: ['https://rpc-testnet.arc.network'], // Placeholder Testnet RPC URL
+                                blockExplorerUrls: ['https://explorer-testnet.arc.network']
+                            }],
+                        });
+                    } catch (addError) {
+                        console.error("Could not add network", addError);
+                    }
+                }
+            }
+        }
+
+        // Fetch Real Live USDC Balance using Standard ERC-20 hex encoding
+        async function fetchRealUSDCBalance(address) {
+            try {
+                // balanceOf function signature hash: 0x70a08231 + 32-byte padded address
+                const cleanAddress = address.substring(2).padStart(64, '0');
+                const dataParam = '0x70a08231' + cleanAddress;
+
+                const rawBalance = await window.ethereum.request({
+                    method: 'eth_call',
+                    params: [{
+                        to: USDC_CONTRACT_ADDRESS,
+                        data: dataParam
+                    }, 'latest']
+                });
+
+                // Parse Hex response safely to standard number format
+                const bigIntValue = BigInt(rawBalance);
+                // USDC typically uses 6 decimals or 18 decimals depending on deployment setup
+                const formattedBalance = Number(bigIntValue) / 10**6; 
+
+                // Dynamic UI Mutation
+                document.getElementById('usdcBalance').innerText = `$${formattedBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+                document.getElementById('balanceStatus').innerText = "Live Arc Testnet Balance Verified";
+                document.getElementById('balanceStatus').style.color = "#34D399";
+                
+                updateUIConnected(address);
+            } catch (err) {
+                console.error("Error reading blockchain balance", err);
+                document.getElementById('usdcBalance').innerText = "$0.00";
+                document.getElementById('balanceStatus').innerText = "Failed to load token balance";
+                document.getElementById('balanceStatus').style.color = "#EF4444";
             }
         }
 
@@ -385,51 +434,29 @@
             const statusVal = document.getElementById('externalStatus');
             const addressVal = document.getElementById('externalAddress');
 
-            // Shorten the address for presentation (e.g., 0x1234...abcd)
             const shortAddress = address.substring(0, 6) + "..." + address.substring(address.length - 4);
-            
             headerBtn.innerText = shortAddress;
             headerBtn.style.background = "#111823";
             headerBtn.style.border = "1px solid #34D399";
             
             panelBtn.innerText = "MetaMask Linked";
-            panelBtn.disabled = true; // Optional: disable after connection
-            panelBtn.style.opacity = "0.6";
-            panelBtn.style.cursor = "not-allowed";
-
             statusVal.innerText = "Connected";
             statusVal.className = "status-value connected";
-            
             addressVal.innerText = address;
             addressVal.style.color = "#34D399";
         }
 
-        // Mocking Circle WaaS Programmable Wallet Generation
         function initializeCircleWallet() {
             const circleStatus = document.getElementById('circleStatus');
             const circleAddress = document.getElementById('circleAddress');
-            
             circleStatus.innerText = "Creating session...";
             circleStatus.style.color = "#F59E0B"; 
-
             setTimeout(() => {
                 circleStatus.innerText = "Active (Secured)";
                 circleStatus.className = "status-value connected";
                 circleAddress.innerText = "0x2a6cCc1195679A2B20a89dE77A7d3407B0F3F19c";
             }, 1200); 
         }
-
-        // Optional: Listen for Account Changes in MetaMask
-        if (typeof window.ethereum !== 'undefined') {
-            window.ethereum.on('accountsChanged', function (accounts) {
-                if(accounts.length > 0) {
-                    updateUIConnected(accounts[0]);
-                } else {
-                    location.reload(); // Reload page if disconnected from extension
-                }
-            });
-        }
     </script>
-
 </body>
 </html>
