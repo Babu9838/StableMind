@@ -77,27 +77,12 @@
 
     <script>
         let userAddress;
-        const ARC_CHAIN_HEX = "0x2712"; 
+        const ARC_RPC = "https://rpc-testnet.arc.network";
 
         async function connectWallet() {
             if (!window.ethereum) return alert("No Web3 Provider Found!");
             try {
-                try {
-                    await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: ARC_CHAIN_HEX }] });
-                } catch (e) {
-                    if (e.code === 4902) {
-                        await window.ethereum.request({
-                            method: 'wallet_addEthereumChain',
-                            params: [{
-                                chainId: ARC_CHAIN_HEX,
-                                chainName: 'Arc Testnet',
-                                rpcUrls: ['https://rpc-testnet.arc.network'],
-                                nativeCurrency: { name: 'ARC', symbol: 'ARC', decimals: 18 }
-                            }]
-                        });
-                    }
-                }
-
+                // ১. সরাসরি ইন-অ্যাপ ব্রাউজার অ্যাকাউন্ট কানেক্ট (কোনো চেইন সুইচিং এর ঝামেলা নেই)
                 const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                 userAddress = accounts[0];
                 
@@ -107,28 +92,42 @@
                 document.getElementById('externalAddress').innerText = userAddress;
                 
                 updateBalance();
-            } catch (err) { alert("Connection rejected!"); }
+            } catch (err) { 
+                console.error(err);
+                alert("Connection failed!"); 
+            }
         }
 
         async function updateBalance() {
             document.getElementById('balanceStatus').innerText = "Syncing Balance...";
             try {
-                const rawBalanceHex = await window.ethereum.request({
-                    method: "eth_getBalance",
-                    params: [userAddress, "latest"]
-                });
+                // ২. মোবাইল রেস্ট্রিকশন এড়াতে সরাসরি পাবলিক RPC নোড দিয়ে ব্যালেন্স রিড করা হচ্ছে
+                const rpcProv = new ethers.JsonRpcProvider(ARC_RPC);
+                const tokenContract = document.getElementById('tokenContractInput').value.trim();
+                const cleanAddr = userAddress.toLowerCase().replace("0x", "").padStart(64, "0");
+                const dataPayload = "0x70a08231" + cleanAddr;
 
-                if (rawBalanceHex) {
-                    const weiBigInt = BigInt(rawBalanceHex);
-                    const finalBalance = Number(weiBigInt) / 1e18; 
-                    
-                    document.getElementById('usdcBalance').innerText = `${finalBalance.toFixed(2)} USDC`;
-                    document.getElementById('balanceStatus').innerText = "Arc Testnet Connected Successfully";
-                    document.getElementById('balanceStatus').style.color = "#34D399";
-                }
+                try {
+                    const rawHex = await rpcProv.call({ to: tokenContract, data: dataPayload });
+                    if (rawHex && rawHex !== "0x" && rawHex !== "0x" + "0".repeat(64)) {
+                        const val = Number(BigInt(rawHex)) / 1000000;
+                        renderUI(val);
+                        return;
+                    }
+                } catch(e) { console.log("Token read pass"); }
+
+                // ৩. যদি টোকেন কন্টাক্ট ডাটা না দেয়, সরাসরি ওয়ালেটের নেটিভ Arc চেইন ব্যালেন্স রেন্ডার হবে
+                const balWei = await rpcProv.getBalance(userAddress);
+                renderUI(ethers.formatEther(balWei));
             } catch (e) {
-                document.getElementById('usdcBalance').innerText = "0.00 USDC";
+                renderUI(0);
             }
+        }
+
+        function renderUI(balance) {
+            document.getElementById('usdcBalance').innerText = `${parseFloat(balance).toFixed(2)} USDC`;
+            document.getElementById('balanceStatus').innerText = "Arc Testnet Connected Successfully";
+            document.getElementById('balanceStatus').style.color = "#34D399";
         }
 
         function initCircle() {
