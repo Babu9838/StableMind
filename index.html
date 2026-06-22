@@ -5,14 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StableMind - Gas Station</title>
     
-    <!-- 🚀 Web3 Core Libraries & WalletConnect AppKit CDN -->
+    <!-- 🚀 Stable Web3 Core & Circle WaaS Web SDK -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.1/ethers.umd.min.js"></script>
     <script src="https://goforward.circle.com/v1/w3s-web-sdk.js"></script>
-    <script type="module">
-        import { createWeb3Modal, defaultConfig } from 'https://esm.run/@web3modal/ethers@latest'
-        window.createWeb3Modal = createWeb3Modal;
-        window.defaultConfig = defaultConfig;
-    </script>
+    
+    <!-- 🌐 Robust Globally Bundled Web3Modal Client for Instant Mobile Loading -->
+    <script src="https://unpkg.com/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
 
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
@@ -57,7 +55,7 @@
             </svg>
             <span class="app-title">StableMind</span>
         </div>
-        <button class="btn-connect" id="connectWalletBtn" onclick="openWalletModal()">Connect Wallet</button>
+        <button class="btn-connect" id="connectWalletBtn" onclick="initRealWallet()">Connect Wallet</button>
     </header>
 
     <main style="max-width: 600px; margin: 0 auto;">
@@ -108,65 +106,85 @@
                 <span>Address</span>
                 <span id="externalAddress" style="font-size: 12px; font-family: monospace;">Not Connected</span>
             </div>
-            <button class="btn-action btn-wallet" id="controlWalletActionBtn" onclick="openWalletModal()">Link MetaMask Wallet</button>
+            <button class="btn-action btn-wallet" id="controlWalletActionBtn" onclick="initRealWallet()">Link MetaMask Wallet</button>
         </div>
     </main>
 
     <script>
-        let modal = null;
-        let userAddress = null;
         let globalProvider = null;
+        let userAddress = null;
         let circleSdk = null;
 
-        // 🚀 WalletConnect / AppKit Initialization
-        window.addEventListener('DOMContentLoaded', () => {
-            // ১ সেকেন্ড ডিলে দেওয়া হয়েছে যাতে ডন মডিউল পুরোপুরি লোড হতে পারে
-            setTimeout(() => {
-                if (window.createWeb3Modal) {
-                    const projectId = '85e043695b28d6f5fbf2b5aa27918a55'; // Public Web3 Node Key
-                    
-                    const arcChain = {
-                        chainId: 10001,
-                        name: 'Arc Testnet',
-                        currency: 'ARC',
-                        explorerUrl: 'https://explorer.arc.network',
-                        rpcUrl: 'https://rpc-testnet.arc.network'
-                    };
+        // 🚀 1. REAL HYBRID WALLET POP-UP LOGIC (Instant Response)
+        async function initRealWallet() {
+            // যদি ইউজার অলরেডি মেটামাস্ক অ্যাপের ইন-অ্যাপ ব্রাউজারে থাকে
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    globalProvider = new ethers.BrowserProvider(window.ethereum);
+                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    userAddress = accounts[0];
+                    setupArcChain();
+                    updateWalletUI(userAddress);
+                    fetchBalance(userAddress);
+                    return;
+                } catch (e) {
+                    console.error("In-App Direct Connection Failed:", e);
+                }
+            }
 
-                    const metadata = {
-                        name: 'StableMind',
-                        description: 'StableMind Gas Station Dashboard',
-                        url: window.location.origin,
-                        icons: ['https://avatars.githubusercontent.com/u/37784886']
-                    };
+            // সাধারণ ব্রাউজার (যেমন ব্রেভ/ক্রোম) এর জন্য ইনস্ট্যান্ট ওয়ালেটকানেক্ট পপ-আপ ট্রিগার
+            try {
+                const WalletConnectProvider = window.WalletConnectProvider.default;
+                const walletConnectProvider = new WalletConnectProvider({
+                    rpc: {
+                        10001: "https://rpc-testnet.arc.network"
+                    },
+                    qrcodeModalOptions: {
+                        mobileLinks: ["metamask", "trust"]
+                    }
+                });
 
-                    modal = window.createWeb3Modal({
-                        ethersConfig: window.defaultConfig({ metadata }),
-                        chains: [arcChain],
-                        projectId,
-                        enableAnalytics: false
-                    });
+                // ইভেন্ট ট্রিগার করে পপআপ বা রিয়েল হ্যান্ডশেক নিশ্চিত করা
+                await walletConnectProvider.enable();
+                globalProvider = new ethers.BrowserProvider(walletConnectProvider);
+                
+                const signer = await globalProvider.getSigner();
+                userAddress = await signer.getAddress();
 
-                    // ওয়ালেট কানেকশন স্টেট মনিটর করা
-                    modal.subscribeProvider((state) => {
-                        if (state.isConnected) {
-                            userAddress = state.address;
-                            globalProvider = new ethers.BrowserProvider(state.provider);
-                            updateWalletUI(userAddress);
-                            fetchBalance(userAddress);
-                        } else {
-                            resetWalletUI();
-                        }
+                updateWalletUI(userAddress);
+                fetchBalance(userAddress);
+
+                // ডিসকানেক্ট ইভেন্ট লিসেনার
+                walletConnectProvider.on("disconnect", (code, reason) => {
+                    resetWalletUI();
+                });
+
+            } catch (error) {
+                console.error("WalletConnect integration error:", error);
+                // মেটামাস্ক অ্যাপে সরাসরি ডিপ-লিংক ব্যাকআপ
+                const cleanUrl = window.location.href.replace(/^https?:\/\//, '');
+                window.location.href = "https://metamask.app.link/dapp/" + cleanUrl;
+            }
+        }
+
+        async function setupArcChain() {
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: '0x2711' }],
+                });
+            } catch (err) {
+                if (err.code === 4902) {
+                    await window.ethereum.request({
+                        method: 'wallet_addEthereumChain',
+                        params: [{
+                            chainId: '0x2711',
+                            chainName: 'Arc Testnet',
+                            nativeCurrency: { name: 'ARC', symbol: 'ARC', decimals: 18 },
+                            rpcUrls: ['https://rpc-testnet.arc.network']
+                        }],
                     });
                 }
-            }, 1000);
-        });
-
-        function openWalletModal() {
-            if (modal) {
-                modal.open();
-            } else {
-                alert("Web3 Wallet Modal is initializing. Please tap again in 2 seconds.");
             }
         }
 
@@ -201,7 +219,7 @@
             }
         }
 
-        // 🔵 Circle Programmable Wallets (WaaS)
+        // 🔵 2. Circle Programmable Wallets (WaaS)
         async function initCircleWallet() {
             const sessionToken = document.getElementById('circleSessionToken').value;
             const secretKey = document.getElementById('circleSecretKey').value;
@@ -233,7 +251,7 @@
             }
         }
 
-        // ⛽ Cryptographic EIP-712 Gasless Sign
+        // ⛽ 3. Cryptographic EIP-712 Gasless Sign
         async function signGaslessTx() {
             if (!userAddress || !globalProvider) { return alert("Connect wallet first!"); }
             const submitBtn = document.getElementById('gaslessSubmitBtn');
