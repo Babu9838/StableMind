@@ -4,9 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StableMind - Gas Station</title>
-    <!-- 🚀 Core Libraries: Ethers.js & Circle WaaS Web SDK -->
+    
+    <!-- 🚀 Web3 Core Libraries & WalletConnect AppKit CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.1/ethers.umd.min.js"></script>
     <script src="https://goforward.circle.com/v1/w3s-web-sdk.js"></script>
+    <script type="module">
+        import { createWeb3Modal, defaultConfig } from 'https://esm.run/@web3modal/ethers@latest'
+        window.createWeb3Modal = createWeb3Modal;
+        window.defaultConfig = defaultConfig;
+    </script>
+
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
         body { background-color: #030508; color: #F3F4F6; padding: 15px; }
@@ -50,7 +57,7 @@
             </svg>
             <span class="app-title">StableMind</span>
         </div>
-        <button class="btn-connect" id="connectWalletBtn" onclick="initWallet()">Connect Wallet</button>
+        <button class="btn-connect" id="connectWalletBtn" onclick="openWalletModal()">Connect Wallet</button>
     </header>
 
     <main style="max-width: 600px; margin: 0 auto;">
@@ -101,58 +108,65 @@
                 <span>Address</span>
                 <span id="externalAddress" style="font-size: 12px; font-family: monospace;">Not Connected</span>
             </div>
-            <button class="btn-action btn-wallet" id="controlWalletActionBtn" onclick="initWallet()">Link MetaMask Wallet</button>
+            <button class="btn-action btn-wallet" id="controlWalletActionBtn" onclick="openWalletModal()">Link MetaMask Wallet</button>
         </div>
     </main>
 
     <script>
-        let provider = null;
+        let modal = null;
         let userAddress = null;
+        let globalProvider = null;
         let circleSdk = null;
 
-        // 🚀 REAL WALLET CONNECT POP-UP LOGIC
-        async function initWallet() {
-            // মোবাইল ব্রাউজার থেকে সরাসরি মেটামাস্ক অ্যাপে ডিপ-লিংক রিডাইরেকশন ট্রিগার
-            if (typeof window.ethereum === 'undefined') {
-                const targetUrl = window.location.href.replace(/^https?:\/\//, '');
-                // ব্রেভ/ক্রোম থেকে অটো মেটামাস্ক অ্যাপের ভেতর ওপেন করবে
-                alert("Redirecting to MetaMask App for Secure Connection Popup...");
-                window.location.href = "https://metamask.app.link/dapp/" + targetUrl;
-                return;
-            }
+        // 🚀 WalletConnect / AppKit Initialization
+        window.addEventListener('DOMContentLoaded', () => {
+            // ১ সেকেন্ড ডিলে দেওয়া হয়েছে যাতে ডন মডিউল পুরোপুরি লোড হতে পারে
+            setTimeout(() => {
+                if (window.createWeb3Modal) {
+                    const projectId = '85e043695b28d6f5fbf2b5aa27918a55'; // Public Web3 Node Key
+                    
+                    const arcChain = {
+                        chainId: 10001,
+                        name: 'Arc Testnet',
+                        currency: 'ARC',
+                        explorerUrl: 'https://explorer.arc.network',
+                        rpcUrl: 'https://rpc-testnet.arc.network'
+                    };
 
-            try {
-                // মেটামাস্ক ব্রাউজারে থাকলে রিয়েল পপ-আপ নিয়ে আসবে
-                provider = new ethers.BrowserProvider(window.ethereum);
-                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                userAddress = accounts[0];
-                
-                // Arc Testnet Auto Switch
-                try {
-                    await window.ethereum.request({
-                        method: 'wallet_switchEthereumChain',
-                        params: [{ chainId: '0x2711' }],
+                    const metadata = {
+                        name: 'StableMind',
+                        description: 'StableMind Gas Station Dashboard',
+                        url: window.location.origin,
+                        icons: ['https://avatars.githubusercontent.com/u/37784886']
+                    };
+
+                    modal = window.createWeb3Modal({
+                        ethersConfig: window.defaultConfig({ metadata }),
+                        chains: [arcChain],
+                        projectId,
+                        enableAnalytics: false
                     });
-                } catch (err) {
-                    if (err.code === 4902) {
-                        await window.ethereum.request({
-                            method: 'wallet_addEthereumChain',
-                            params: [{
-                                chainId: '0x2711',
-                                chainName: 'Arc Testnet',
-                                nativeCurrency: { name: 'ARC', symbol: 'ARC', decimals: 18 },
-                                rpcUrls: ['https://rpc-testnet.arc.network']
-                            }],
-                        });
-                    }
+
+                    // ওয়ালেট কানেকশন স্টেট মনিটর করা
+                    modal.subscribeProvider((state) => {
+                        if (state.isConnected) {
+                            userAddress = state.address;
+                            globalProvider = new ethers.BrowserProvider(state.provider);
+                            updateWalletUI(userAddress);
+                            fetchBalance(userAddress);
+                        } else {
+                            resetWalletUI();
+                        }
+                    });
                 }
+            }, 1000);
+        });
 
-                updateWalletUI(userAddress);
-                fetchBalance(userAddress);
-
-            } catch (error) {
-                console.error(error);
-                alert("Connection rejected! Ensure you approve the request inside MetaMask.");
+        function openWalletModal() {
+            if (modal) {
+                modal.open();
+            } else {
+                alert("Web3 Wallet Modal is initializing. Please tap again in 2 seconds.");
             }
         }
 
@@ -165,9 +179,20 @@
             document.getElementById('controlWalletActionBtn').innerText = "Wallet Connected";
         }
 
+        function resetWalletUI() {
+            document.getElementById('connectWalletBtn').innerText = "Connect Wallet";
+            document.getElementById('externalStatus').innerText = "Disconnected";
+            document.getElementById('externalStatus').className = "status-value";
+            document.getElementById('externalAddress').innerText = "Not Connected";
+            document.getElementById('controlWalletActionBtn').innerText = "Link MetaMask Wallet";
+            document.getElementById('usdcBalance').innerText = "$0.00";
+            document.getElementById('balanceStatus').innerText = "Wallet Not Connected";
+        }
+
         async function fetchBalance(address) {
+            if (!globalProvider) return;
             try {
-                const bal = await provider.getBalance(address);
+                const bal = await globalProvider.getBalance(address);
                 document.getElementById('usdcBalance').innerText = `${parseFloat(ethers.formatUnits(bal, 18)).toFixed(4)} ARC`;
                 document.getElementById('balanceStatus').innerText = "Arc Network Verified";
                 document.getElementById('balanceStatus').style.color = "#34D399";
@@ -194,7 +219,7 @@
                 circleSdk.executeChallenge((error, result) => {
                     if (error) {
                         alert("Circle Error: " + error.message);
-                        resetCircleUI();
+                        document.getElementById('circleWalletBtn').innerText = "Create / Login Circle Wallet";
                     } else {
                         document.getElementById('circleStatus').innerText = "Active WaaS Wallet";
                         document.getElementById('circleStatus').className = "status-value connected";
@@ -205,27 +230,21 @@
                 });
             } catch (err) {
                 alert("Failed to initialize Circle WaaS.");
-                resetCircleUI();
             }
-        }
-
-        function resetCircleUI() {
-            document.getElementById('circleWalletBtn').innerText = "Create / Login Circle Wallet";
-            document.getElementById('circleStatus').innerText = "Initialization Failed";
         }
 
         // ⛽ Cryptographic EIP-712 Gasless Sign
         async function signGaslessTx() {
-            if (!userAddress) { return alert("Connect wallet first!"); }
+            if (!userAddress || !globalProvider) { return alert("Connect wallet first!"); }
             const submitBtn = document.getElementById('gaslessSubmitBtn');
             
             try {
-                submitBtn.innerText = "Signing in MetaMask...";
+                submitBtn.innerText = "Signing in Wallet...";
                 const domain = { name: "StableMind Gas Station", version: "1", chainId: 10001, verifyingContract: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174" };
                 const types = { MetaTransaction: [{ name: "nonce", type: "uint256" }, { name: "from", type: "address" }, { name: "recipient", type: "address" }] };
                 const message = { nonce: Math.floor(Math.random() * 99999), from: userAddress, recipient: document.getElementById('gaslessRecipient').value };
 
-                const signer = await provider.getSigner();
+                const signer = await globalProvider.getSigner();
                 const signature = await signer.signTypedData(domain, types, message);
 
                 submitBtn.innerText = "Relaying to Paymaster...";
