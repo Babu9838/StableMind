@@ -1,107 +1,39 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StableMind Dashboard</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.1/ethers.umd.min.js"></script>
-    <style>
-        * { box-sizing: border-box; font-family: sans-serif; }
-        body { background-color: #030508; color: #F3F4F6; padding: 15px; margin: 0; }
-        .container { max-width: 450px; margin: 0 auto; }
-        
-        /* Header & Logo */
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .logo-area { display: flex; align-items: center; gap: 10px; font-weight: bold; font-size: 20px; color: #38BDF8; }
-        #connectBtn { background: #1E293B; padding: 8px 15px; border-radius: 8px; color: white; border: 1px solid #334155; cursor: pointer; font-size: 12px; }
-
-        /* Card Styles */
-        .card { background-color: #090D14; border: 1px solid #111823; padding: 20px; border-radius: 14px; margin-bottom: 15px; }
-        .label { font-size: 10px; color: #9CA3AF; text-transform: uppercase; margin-bottom: 8px; display: block; font-weight: bold; }
-        .value { font-size: 24px; font-weight: bold; color: #38BDF8; margin-bottom: 5px; }
-        .sub-text { font-size: 12px; color: #34D399; margin-bottom: 10px; }
-        
-        .input-field { width: 100%; background: #030508; border: 1px solid #161F30; padding: 12px; border-radius: 8px; color: white; margin-bottom: 10px; }
-        .btn-main { width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: bold; color: white; cursor: pointer; margin-top: 5px; }
-        .btn-blue { background: #0052FF; }
-        .btn-gradient { background: linear-gradient(90deg, #EC4899, #8B5CF6); }
-    </style>
-</head>
-<body>
-
-<div class="container">
-    <header>
-        <div class="logo-area"><span>⋒</span> StableMind</div>
-        <button id="connectBtn" onclick="connectWallet()">Connect Wallet</button>
-    </header>
-
-    <!-- Total Balance Card -->
-    <div class="card">
-        <span class="label">Total USDC Balance</span>
-        <div class="value">71.58 USDC</div>
-        <div class="sub-text">Arc Testnet Sync Success</div>
-    </div>
-
-    <!-- Circle Programmable Wallet -->
-    <div class="card">
-        <span class="label">CIRCLE PROGRAMMABLE WALLET</span>
-        <input type="text" class="input-field" placeholder="User Session Token">
-        <input type="password" class="input-field" placeholder="Encryption Key">
-        <button class="btn-main btn-blue">Create / Login Circle Wallet</button>
-    </div>
-
-    <!-- CCTP Bridge & Unified Balance -->
-    <div class="card">
-        <span class="label">UNIFIED BALANCE KIT</span>
-        <button class="btn-main" style="background:#111823; margin-bottom:20px;">Refresh Multi-Chain Balances</button>
-        
-        <span class="label">CCTP CROSS-CHAIN BRIDGE</span>
-        <select class="input-field" id="destChain">
-            <option value="arc-testnet">Arc Testnet</option>
-            <option value="arbitrum-sepolia">Arbitrum Sepolia</option>
-        </select>
-        <input type="number" class="input-field" id="bridgeAmount" placeholder="Amount to Bridge">
-        <button class="btn-main btn-gradient" onclick="initiateRealBridge()">Initiate CCTP Transfer</button>
-    </div>
-
-    <!-- Gas Station -->
-    <div class="card">
-        <span class="label">Gas Station (Abstraction)</span>
-        <button class="btn-main btn-blue">Execute Gasless Deposit</button>
-    </div>
+<!-- CCTP CROSS-CHAIN BRIDGE Section -->
+<div class="card">
+    <span class="label">CCTP CROSS-CHAIN BRIDGE</span>
+    
+    <select class="input-field" id="destChain">
+        <option value="arc-testnet">Arc Testnet</option>
+        <option value="arbitrum-sepolia">Arbitrum Sepolia</option>
+    </select>
+    
+    <input type="number" class="input-field" id="bridgeAmount" placeholder="Amount to Bridge">
+    
+    <!-- বাটনটিতে সরাসরি রিয়েল ট্রানজ্যাকশন লজিক যোগ করা হয়েছে -->
+    <button class="btn-gradient" onclick="initiateRealBridge()">Initiate CCTP Transfer</button>
 </div>
 
+<!-- ট্রানজ্যাকশন লজিক -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.1/ethers.umd.min.js"></script>
 <script>
-    // Wallet Connect Logic
-    async function connectWallet() {
-        if (window.ethereum) {
-            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-            document.getElementById('connectBtn').innerText = accounts[0].substring(0, 6) + "...";
-        } else {
-            alert("Please install MetaMask!");
-        }
-    }
-
-    // Real Bridge Execution Logic
     async function initiateRealBridge() {
         const amount = document.getElementById('bridgeAmount').value;
-        const target = document.getElementById('destChain').value;
-        if (!amount) return alert("Please enter amount!");
+        if (!amount) return;
 
-        try {
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            const signer = await provider.getSigner();
-            
-            // রিয়েল ট্রানজ্যাকশন পপআপের জন্য ethers.js ব্যবহার
-            alert(`Initiating bridge request for ${amount} USDC to ${target}. Please check your wallet.`);
-            
-            // এখানে আপনার CCTP স্মার্ট কন্ট্রাক্টের অ্যাড্রেস এবং ABI দিয়ে ট্রানজ্যাকশন কল করতে হবে
-            console.log("CCTP Bridge Triggered for:", target);
-        } catch (error) {
-            alert("Transaction failed or rejected by user.");
+        if (window.ethereum) {
+            try {
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+
+                // মেটামাস্ক পপআপ ট্রানজ্যাকশন রিকোয়েস্ট
+                const tx = await signer.sendTransaction({
+                    to: "0x3600000000000000000000000000000000000000",
+                    value: 0,
+                    data: "0xa9059cbb" + ethers.toBeHex(ethers.parseUnits(amount, 6), 32).slice(2)
+                });
+            } catch (error) {
+                console.error(error);
+            }
         }
     }
 </script>
-
-</body>
-</html>
