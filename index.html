@@ -82,7 +82,6 @@
         async function connectWallet() {
             if (!window.ethereum) return alert("No Web3 Provider Found!");
             try {
-                // ১. ওয়ালেটে Arc Testnet সুইচ পপআপ ট্রিগার
                 try {
                     await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: ARC_CHAIN_HEX }] });
                 } catch (e) {
@@ -99,7 +98,6 @@
                     }
                 }
 
-                // ২. ওয়ালেট অ্যাকাউন্ট কানেক্ট পপআপ
                 const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                 userAddress = accounts[0];
                 
@@ -115,7 +113,6 @@
         async function updateBalance() {
             document.getElementById('balanceStatus').innerText = "Syncing Balance...";
             try {
-                // ৩. মোবাইল ব্রাউজারের রেস্ট্রিকশন এড়াতে সরাসরি ওয়ালেট নোড ব্যালেন্স রিড
                 const rawBalanceHex = await window.ethereum.request({
                     method: "eth_getBalance",
                     params: [userAddress, "latest"]
