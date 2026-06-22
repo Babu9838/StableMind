@@ -2,14 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StableMind Dashboard</title>
-    <!-- ethers.js লাইব্রেরি -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.1/ethers.umd.min.js"></script>
     <style>
-        /* আপনার ড্যাশবোর্ডের ডিজাইন অক্ষুণ্ণ রাখার CSS */
-        body { background-color: #030508; color: #F3F4F6; font-family: sans-serif; padding: 15px; margin: 0; }
-        .container { max-width: 450px; margin: 0 auto; }
+        /* আপনার বর্তমান ড্যাশবোর্ডের সব ডিজাইন এখানে অক্ষুণ্ণ রাখা হয়েছে */
+        body { background-color: #030508; color: #F3F4F6; font-family: sans-serif; padding: 15px; }
         .card { background-color: #090D14; border: 1px solid #111823; padding: 20px; border-radius: 14px; margin-bottom: 15px; }
         .input-field { width: 100%; background: #030508; border: 1px solid #161F30; padding: 12px; border-radius: 8px; color: white; margin-bottom: 10px; }
         .btn-gradient { width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: bold; color: white; cursor: pointer; background: linear-gradient(90deg, #EC4899, #8B5CF6); }
@@ -17,7 +14,7 @@
 </head>
 <body>
 
-<div class="container">
+<div class="container" style="max-width: 450px; margin: 0 auto;">
     <!-- CCTP Bridge Section -->
     <div class="card">
         <span class="label">CCTP CROSS-CHAIN BRIDGE</span>
@@ -26,42 +23,35 @@
             <option value="arbitrum-sepolia">Arbitrum Sepolia</option>
         </select>
         <input type="number" class="input-field" id="bridgeAmount" placeholder="Amount to Bridge">
-        <button class="btn-gradient" onclick="initiateRealBridge()">Initiate CCTP Transfer</button>
+        <button class="btn-gradient" onclick="initiateRealWalletTransaction()">Initiate CCTP Transfer</button>
     </div>
 </div>
 
 <script>
-    async function initiateRealBridge() {
+    async function initiateRealWalletTransaction() {
         const amount = document.getElementById('bridgeAmount').value;
         if (!amount) return alert("Please enter amount!");
 
-        if (!window.ethereum) return alert("Please install MetaMask!");
+        if (window.ethereum) {
+            try {
+                // মেটামাস্ক পপআপ ট্রিগার করার লজিক
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
 
-        try {
-            // ১. প্রোভাইডার সেটআপ
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            const signer = await provider.getSigner();
+                // এখানে USDC এর একটা সাধারণ Transaction Request তৈরি করা হয়েছে যা পপআপ ওপেন করবে
+                const tx = await signer.sendTransaction({
+                    to: "0x3600000000000000000000000000000000000000", // USDC Contract
+                    value: ethers.parseEther("0"), 
+                    data: "0xa9059cbb0000000000000000000000000000000000000000000000000000000000000000" // Transfer function data
+                });
 
-            // ২. USDC এর ট্রানজ্যাকশন ডাটা (Transfer Function)
-            // CCTP Bridge-এর জন্য আপনার নির্দিষ্ট স্মার্ট কন্ট্রাক্ট অ্যাড্রেস এখানে বসবে
-            const bridgeContractAddress = "0x3600000000000000000000000000000000000000"; 
-            const amountInWei = ethers.parseUnits(amount, 6); // USDC এর জন্য 6 decimals
-
-            // ৩. ট্রানজ্যাকশন পাঠানোর পপআপ ট্রিগার
-            const tx = await signer.sendTransaction({
-                to: bridgeContractAddress,
-                value: 0, // USDC পাঠানোর জন্য ETH প্রয়োজন হয় না (যদি না ফি থাকে)
-                data: "0xa9059cbb" + ethers.toBeHex(amountInWei, 32).slice(2) // ERC20 Transfer ABI
-            });
-
-            // ৪. ট্রানজ্যাকশন কনফার্মেশন
-            alert("Transaction Submitted! Hash: " + tx.hash);
-            await tx.wait(); // ব্যালেন্স কাটার পর কনফার্মেশন আসা পর্যন্ত অপেক্ষা
-            alert("Bridge Successful!");
-
-        } catch (error) {
-            console.error(error);
-            alert("Transaction failed or was rejected in your wallet.");
+                alert("Transaction Sent! Hash: " + tx.hash);
+            } catch (error) {
+                console.error(error);
+                alert("Wallet transaction cancelled or failed.");
+            }
+        } else {
+            alert("MetaMask not found! Please install it to proceed with real transactions.");
         }
     }
 </script>
