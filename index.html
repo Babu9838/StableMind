@@ -126,14 +126,12 @@
         async function forceArcTestnet() {
             if (!window.ethereum) return false;
             try {
-                // চেইন সুইচ করার রিকোয়েস্ট
                 await window.ethereum.request({
                     method: 'wallet_switchEthereumChain',
                     params: [{ chainId: ARC_CHAIN_ID_HEX }],
                 });
                 return true;
             } catch (switchError) {
-                // চেইন যদি ওয়ালেটে অ্যাড করা না থাকে (Error Code: 4902)
                 if (switchError.code === 4902) {
                     try {
                         await window.ethereum.request({
@@ -160,7 +158,6 @@
         async function triggerUniversalWallet() {
             try {
                 if (window.ethereum) {
-                    // কানেক্ট করার আগেই নেটওয়ার্ক সুইচ ফোর্স করা হচ্ছে
                     await forceArcTestnet();
                     
                     globalProvider = new ethers.BrowserProvider(window.ethereum);
@@ -170,7 +167,6 @@
                     updateWalletUI(userAddress);
                     fetchRealUSDCBalance(userAddress);
 
-                    // ওয়ালেটের নেটওয়ার্ক চেঞ্জ ট্র্যাক করার জন্য লিসেনার
                     window.ethereum.on('chainChanged', () => {
                         window.location.reload();
                     });
@@ -198,16 +194,63 @@
             }
         }
 
-        // 💰 HARD DATA CORRELATION BALANCER
+        // 💰 MASTER UNIVERSAL DEEP BALANCER (RPC BYPASS INTEGRATION)
         async function fetchRealUSDCBalance(address) {
             document.getElementById('usdcBalance').innerText = "Syncing...";
-            document.getElementById('balanceStatus').innerText = "Connecting Arc Contract...";
+            document.getElementById('balanceStatus').innerText = "Querying Arc Block... Please wait";
             document.getElementById('balanceStatus').style.color = "#38BDF8";
 
             const cleanAddr = address.toLowerCase().replace("0x", "").padStart(64, "0");
-            const dataPayload = "0x70a08231" + cleanAddr; // balanceOf(address)
+            const dataPayload = "0x70a08231" + cleanAddr; // ERC20 balanceOf standard hex code
 
-            // চ্যানেল ১: ডিরেক্ট ওয়ালেট ইনজেকশন মেমোরি কুয়েরি
+            // চ্যানেল ১: ডিরেক্ট পাবলিক RPC মেথড (মোবাইল ব্রাউজার ক্লায়েন্ট ব্লক বাইপাস)
+            try {
+                const response = await fetch(ARC_RPC_ENDPOINT, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        jsonrpc: "2.0",
+                        method: "eth_call",
+                        params: [{ to: targetUsdcContract, data: dataPayload }, "latest"],
+                        id: window.crypto ? window.crypto.getRandomValues(new Uint32Array(1))[0] : Math.floor(Math.random() * 1000)
+                    })
+                });
+
+                const rpcResult = await response.json();
+                
+                if (rpcResult && rpcResult.result && rpcResult.result !== "0x" && rpcResult.result !== "0x" + "0".repeat(64)) {
+                    const bigIntValue = BigInt(rpcResult.result);
+                    // ব্যালেন্স ডেটা নিয়ে সরাসরি UI আপডেট করা হচ্ছে (USDC 6 Decimals বা অন্য কাস্টম টোকেন সাপোর্ট)
+                    const parsedValue = Number(bigIntValue) / 1000000; 
+                    renderBalanceUI(parsedValue);
+                    return;
+                }
+            } catch (rpcErr) {
+                console.warn("Public RPC channel query bypassed, trying secondary provider stream...");
+            }
+
+            // চ্যানেল ২: ইথার্স ডিরেক্ট নেটওয়ার্ক প্রোভাইডার ফলব্যাক ওভারলে
+            try {
+                const rpcProvider = new ethers.JsonRpcProvider(ARC_RPC_ENDPOINT);
+                const erc20Abi = [
+                    "function balanceOf(address) view returns (uint256)",
+                    "function decimals() view returns (uint8)"
+                ];
+                const targetContract = new ethers.Contract(targetUsdcContract, erc20Abi, rpcProvider);
+                
+                const [rawBalance, decimals] = await Promise.all([
+                    targetContract.balanceOf(address),
+                    targetContract.decimals().catch(() => 6)
+                ]);
+
+                const parsedValue = Number(rawBalance) / Math.pow(10, decimals);
+                renderBalanceUI(parsedValue);
+                return;
+            } catch (fallbackErr) {
+                console.error("Deep balance extraction channel offline:", fallbackErr);
+            }
+
+            // চ্যানেল ৩: ইনজেক্টেড ওয়ালেট মেমোরি ইন্টারঅ্যাকশন
             if (window.ethereum) {
                 try {
                     const rawHex = await window.ethereum.request({
@@ -222,42 +265,18 @@
                         return;
                     }
                 } catch (e) {
-                    console.warn("Wallet call failed, trying backup fetch pipeline...");
+                    console.error("All dynamic balance queries dropped.");
                 }
             }
 
-            // চ্যানেল ২: CORS-ফ্রি ডিরেক্ট RPC POST নোড মেথড
-            try {
-                const response = await fetch(ARC_RPC_ENDPOINT, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        jsonrpc: "2.0",
-                        method: "eth_call",
-                        params: [{ to: targetUsdcContract, data: dataPayload }, "latest"],
-                        id: 1
-                    })
-                });
-
-                const rpcResult = await response.json();
-                if (rpcResult && rpcResult.result && rpcResult.result !== "0x" && rpcResult.result !== "0x" + "0".repeat(64)) {
-                    const bigIntValue = BigInt(rpcResult.result);
-                    const parsedValue = Number(bigIntValue) / 1000000;
-                    renderBalanceUI(parsedValue);
-                    return;
-                }
-            } catch (rpcErr) {
-                console.error("Backup node fetch failed:", rpcErr);
-            }
-
-            // ফলব্যাক সেফ ডিসপ্লে (যদি ব্যালেন্স সত্যিই ০ হয় বা নেটওয়ার্ক রেসপন্স না করে)
+            // ব্যালেন্স কুয়েরি সফল হলে বা টেস্টনেট কনজেশন থাকলে সেফ স্টেট UI
             document.getElementById('usdcBalance').innerText = "0.00 USDC";
             document.getElementById('balanceStatus').innerText = "Arc Testnet Live Sync Active";
             document.getElementById('balanceStatus').style.color = "#34D399";
         }
 
         function renderBalanceUI(balance) {
-            document.getElementById('usdcBalance').innerText = `$${parseFloat(balance).toFixed(2)} USDC`;
+            document.getElementById('usdcBalance').innerText = `${parseFloat(balance).toFixed(2)} USDC`;
             document.getElementById('balanceStatus').innerText = "Arc Testnet Live Balance";
             document.getElementById('balanceStatus').style.color = "#34D399";
         }
