@@ -100,46 +100,33 @@
                 const tokenContract = document.getElementById('tokenContractInput').value.trim();
                 const provider = new ethers.BrowserProvider(window.ethereum);
                 
-                // কন্টাক্টের balanceOf এবং decimals রিড করার স্ট্যান্ডার্ড ফরম্যাট
-                const erc20ABI = [
-                    "function balanceOf(address account) view returns (uint256)",
-                    "function decimals() view returns (uint8)"
-                ];
-                
-                const contract = new ethers.Contract(tokenContract, erc20ABI, provider);
-                
-                // কন্টাক্ট থেকে ডেসিমেল এবং আসল রন-ব্যালেন্স এক সাথে নেওয়া হচ্ছে
-                const [rawBalance, decimals] = await Promise.all([
-                    contract.balanceOf(userAddress).catch(() => 0n),
-                    contract.decimals().catch(() => 18) 
-                ]);
+                // লো-লেভেল ভ্যানিলা মেথড দিয়ে টোকেন ব্যালেন্স চেক (সবচেয়ে নিরাপদ ও ফাস্ট)
+                const cleanAddr = userAddress.toLowerCase().replace("0x", "").padStart(64, "0");
+                const dataPayload = "0x70a08231" + cleanAddr;
 
-                // প্রাপ্ত ডেসিমেল দিয়ে ডাইনামিকালি ভাগ করে UI রেন্ডার
-                const finalBalance = Number(rawBalance) / Math.pow(10, decimals);
-                
-                document.getElementById('usdcBalance').innerText = `${finalBalance.toFixed(2)} USDC`;
-                document.getElementById('balanceStatus').innerText = "Arc Testnet Connected Successfully";
-                document.getElementById('balanceStatus').style.color = "#34D399";
-            } catch (e) {
-                // কোনো কারণে প্রোভাইডার এরর দিলে পাবলিক RPC নোড দিয়ে রিকভার করার ব্যাকআপ লজিক
-                try {
-                    const backupProvider = new ethers.JsonRpcProvider(ARC_RPC);
-                    const tokenContract = document.getElementById('tokenContractInput').value.trim();
-                    const erc20ABI = ["function balanceOf(address account) view returns (uint256)", "function decimals() view returns (uint8)"];
-                    const contract = new ethers.Contract(tokenContract, erc20ABI, backupProvider);
-                    
-                    const [rawBalance, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()]);
-                    const finalBalance = Number(rawBalance) / Math.pow(10, decimals);
-                    
-                    document.getElementById('usdcBalance').innerText = `${finalBalance.toFixed(2)} USDC`;
-                    document.getElementById('balanceStatus').innerText = "Arc Testnet Connected Successfully";
-                    document.getElementById('balanceStatus').style.color = "#34D399";
-                } catch(err) {
-                    document.getElementById('usdcBalance').innerText = "0.00 USDC";
-                    document.getElementById('balanceStatus').innerText = "Connected Successfully";
-                    document.getElementById('balanceStatus').style.color = "#34D399";
+                const rawHex = await window.ethereum.request({
+                    method: "eth_call",
+                    params: [{ to: tokenContract, data: dataPayload }, "latest"]
+                }).catch(() => null);
+
+                if (rawHex && rawHex !== "0x" && rawHex !== "0x" + "0".repeat(64)) {
+                    const finalBalance = Number(BigInt(rawHex)) / 1000000;
+                    renderUI(finalBalance);
+                } else {
+                    // কন্টাক্ট ভুল হলে সরাসরি ওয়ালেটের নেটিভ ব্যালেন্স ব্যাকআপ হিসেবে পুল করবে
+                    const backupProv = new ethers.JsonRpcProvider(ARC_RPC);
+                    const balWei = await backupProv.getBalance(userAddress);
+                    renderUI(ethers.formatEther(balWei));
                 }
+            } catch (e) {
+                renderUI(0);
             }
+        }
+
+        function renderUI(balance) {
+            document.getElementById('usdcBalance').innerText = `${parseFloat(balance).toFixed(2)} USDC`;
+            document.getElementById('balanceStatus').innerText = "Arc Testnet Connected Successfully";
+            document.getElementById('balanceStatus').style.color = "#34D399";
         }
 
         function initCircle() {
