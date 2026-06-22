@@ -7,32 +7,35 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.1/ethers.umd.min.js"></script>
     <script src="https://goforward.circle.com/v1/w3s-web-sdk.js"></script>
     <style>
-        /* Apnar purono CSS same thakbe, kono change nei */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
         body { background-color: #030508; color: #F3F4F6; padding: 15px; }
         header { background-color: #090D14; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #111823; border-radius: 10px; margin-bottom: 24px; }
+        .brand-container { display: flex; align-items: center; gap: 12px; }
         .app-title { font-size: 26px; font-weight: 800; background: linear-gradient(135deg, #38BDF8, #0EA5E9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .btn-action { width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; border: none; margin-top: 12px; color: white; }
+        .btn-connect { background: linear-gradient(135deg, #0EA5E9, #2563EB); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px; }
         .card { background-color: #090D14; padding: 24px; border-radius: 14px; border: 1px solid #111823; margin-bottom: 20px; }
+        .value { font-size: 30px; font-weight: bold; color: #38BDF8; margin: 8px 0; }
         .gas-input { width: 100%; background-color: #030508; border: 1px solid #161F30; border-radius: 8px; padding: 12px; color: white; margin-top: 6px; }
+        .btn-action { width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; border: none; margin-top: 12px; color: white; }
     </style>
 </head>
 <body>
 
     <header>
-        <div class="app-title">StableMind</div>
-        <button id="connectWalletBtn" onclick="connectWallet()">Connect Wallet</button>
+        <div class="brand-container">
+            <span class="app-title">StableMind</span>
+        </div>
+        <button class="btn-connect" id="connectWalletBtn" onclick="connectWallet()">Connect Wallet</button>
     </header>
 
     <main style="max-width: 600px; margin: 0 auto;">
         <div class="card">
-            <h3>USDC Transfer (Dual Mode)</h3>
+            <h3>USDC Transaction</h3>
             <input type="text" class="gas-input" id="recipient" placeholder="Recipient Address">
-            <input type="text" class="gas-input" id="amount" placeholder="Amount (USDC)">
+            <input type="number" class="gas-input" id="amount" placeholder="Amount (USDC)">
             
-            <button class="btn-action" style="background:#0EA5E9" onclick="sendViaMetaMask()">Send via MetaMask</button>
-            
-            <button class="btn-action" style="background:#0052FF" onclick="sendViaCircle()">Send via Circle WaaS</button>
+            <button class="btn-action" style="background: linear-gradient(135deg, #38BDF8, #2563EB);" onclick="sendViaMetaMask()">Send via MetaMask</button>
+            <button class="btn-action" style="background: linear-gradient(135deg, #0052FF, #103178);" onclick="sendViaCircle()">Send via Circle WaaS</button>
         </div>
     </main>
 
@@ -40,34 +43,32 @@
         const USDC_ADDRESS = "0x3600000000000000000000000000000000000000";
         const ABI = ["function transfer(address to, uint256 amount) returns (bool)"];
 
-        // 1. MetaMask/Brave Transaction
+        // 1. MetaMask Transaction Logic
         async function sendViaMetaMask() {
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            const signer = await provider.getSigner();
-            const contract = new ethers.Contract(USDC_ADDRESS, ABI, signer);
-            
-            const to = document.getElementById('recipient').value;
-            const amt = ethers.parseUnits(document.getElementById('amount').value, 6);
-            
             try {
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+                const contract = new ethers.Contract(USDC_ADDRESS, ABI, signer);
+                const to = document.getElementById('recipient').value;
+                const amt = ethers.parseUnits(document.getElementById('amount').value, 6);
+                
                 const tx = await contract.transfer(to, amt);
-                alert("Tx Sent via MetaMask! Hash: " + tx.hash);
-            } catch(e) { alert("MetaMask Tx Failed!"); }
+                alert("Transaction Submitted! Hash: " + tx.hash);
+            } catch(e) { alert("MetaMask Transaction Failed: " + e.message); }
         }
 
-        // 2. Circle WaaS Transaction
+        // 2. Circle WaaS Transaction Logic
         async function sendViaCircle() {
-            // Circle SDK instance use kore transaction
             const circleSdk = new window.CircleUserSdk();
-            // Ekhane apnar challenge logic add korben jeta Circle console-e ache
-            alert("Circle Transaction Initated... (Ensure Challenge is active)");
-            // Circle transaction code...
+            // আপনার সার্কেল কনসোলের সেশন টোকেন দিয়ে চ্যালেঞ্জ ভেরিফাই করুন
+            alert("Circle SDK initialized. Please complete authentication challenge via Console.");
+            // Circle-এর ডকুমেন্টেশন অনুযায়ী ট্রানজ্যাকশন সই করার লজিক এখানে বসবে
         }
 
         async function connectWallet() {
             if (window.ethereum) {
                 await window.ethereum.request({ method: 'eth_requestAccounts' });
-                alert("Wallet Connected!");
+                alert("MetaMask Connected!");
             }
         }
     </script>
