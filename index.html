@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StableMind - Gas Station</title>
     
-    <!-- 🚀 Core Web3 Bundles -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.1/ethers.umd.min.js"></script>
     <script src="https://goforward.circle.com/v1/w3s-web-sdk.js"></script>
     <script src="https://unpkg.com/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
@@ -19,7 +18,7 @@
         .btn-connect { background: linear-gradient(135deg, #0EA5E9, #2563EB); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px; }
         .card { background-color: #090D14; padding: 24px; border-radius: 14px; border: 1px solid #111823; margin-bottom: 20px; }
         .value { font-size: 30px; font-weight: bold; color: #38BDF8; margin: 8px 0; }
-        .subtext { font-size: 13px; color: #EF4444; font-weight: 500; }
+        .subtext { font-size: 13px; color: #9CA3AF; font-weight: 500; }
         .status-box { background-color: #030508; border: 1px solid #161F30; padding: 14px; border-radius: 10px; margin: 12px 0; display: flex; justify-content: space-between; font-size: 14px; }
         .status-value { color: #EF4444; font-weight: bold; }
         .status-value.connected { color: #34D399; }
@@ -34,7 +33,6 @@
 
     <header>
         <div class="brand-container">
-            <!-- ⚡ CRISP VECTOR ARC LOGO -->
             <svg width="38" height="38" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="border-radius: 8px; display: block; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
                 <rect width="100" height="100" fill="url(#bg_gradient)"/>
                 <path d="M50 15C31.5 15 19 36 19 63C19 72.5 21 82 21 82H32C32 82 29.5 73.5 29.5 63C29.5 42.5 38 29.5 50 29.5C62 29.5 70.5 42.5 70.5 63C70.5 73.5 68 82 68 82H79C79 82 81 72.5 81 63C81 36 68.5 15 50 15Z" fill="url(#arc_gradient)"/>
@@ -57,14 +55,12 @@
     </header>
 
     <main style="max-width: 600px; margin: 0 auto;">
-        <!-- USDC Balance Component -->
         <div class="card">
             <h3>Total USDC Balance</h3>
             <div class="value" id="usdcBalance">$0.00</div>
             <div class="subtext" id="balanceStatus">Wallet Not Connected</div>
         </div>
 
-        <!-- 🔵 Circle Programmable Wallet -->
         <div class="card" style="border-color: #0052FF;">
             <h2>🔵 Circle Programmable Wallet</h2>
             <p style="font-size: 13px; color: #9CA3AF; margin-top: 4px;">Web3 Wallet-as-a-Service (WaaS) powered by Circle infrastructure.</p>
@@ -81,7 +77,6 @@
             <button class="btn-action btn-circle" id="circleWalletBtn" onclick="initCircleWallet()">Create / Login Circle Wallet</button>
         </div>
 
-        <!-- Gas Station (Gas Abstraction) -->
         <div class="card">
             <h2>⛽ Gas Station (Abstraction)</h2>
             <div class="status-box">
@@ -93,7 +88,6 @@
             <button class="btn-action btn-gas" id="gaslessSubmitBtn" onclick="signGaslessTx()">Execute Gasless Deposit</button>
         </div>
 
-        <!-- MetaMask / Brave Provider Dashboard -->
         <div class="card">
             <h2>Brave / MetaMask Provider</h2>
             <div class="status-box">
@@ -113,18 +107,20 @@
         let userAddress = null;
         let circleSdk = null;
 
-        // 📝 Network Configuration 
-        const ARC_RPC_URL = "https://rpc-testnet.arc.network";
+        // 📝 Arc Testnet Config
+        const ARC_RPC_URLS = [
+            "https://rpc-testnet.arc.network",
+            "https://rpc.arc.network" // Fallback alternative
+        ];
         const USDC_CONTRACT_ADDRESS = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"; 
         const ERC20_ABI = [
             "function balanceOf(address owner) view returns (uint256)",
             "function decimals() view returns (uint8)"
         ];
 
-        // 🚀 UNIVERSAL SMART CONNECTION LOGIC
+        // 🚀 SMART CONNECTION GATEWAY
         async function triggerUniversalWallet() {
             try {
-                // ইন-অ্যাপ মেটামাস্ক/ব্রেভ ইনজেক্টেড চেক
                 if (window.ethereum) {
                     globalProvider = new ethers.BrowserProvider(window.ethereum);
                     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
@@ -135,10 +131,9 @@
                     return;
                 }
 
-                // মোবাইল গেটওয়ে মোডাল হ্যান্ডশেক
                 const WalletConnectProvider = window.WalletConnectProvider.default;
                 const provider = new WalletConnectProvider({
-                    rpc: { 10001: ARC_RPC_URL },
+                    rpc: { 10001: ARC_RPC_URLS[0] },
                     qrcodeModalOptions: { mobileLinks: ["metamask", "trust", "brave"] }
                 });
 
@@ -160,47 +155,54 @@
             }
         }
 
-        // 💰 RPC BACKUP HYBRID BALANCE FETCH (কখনো ফেল করবে না)
+        // 💰 HIGH-PERFORMANCE MULTI-FALLBACK USDC BALANCING
         async function fetchRealUSDCBalance(address) {
-            try {
-                document.getElementById('usdcBalance').innerText = "Syncing...";
-                
-                let targetProvider = globalProvider;
-                
-                // মোবাইল সেশন ডিলে এড়াতে সরাসরি Arc RPC প্রোভাইডারকে ব্যাকআপ হিসেবে ব্যবহার করা
-                if (!targetProvider) {
-                    targetProvider = new ethers.JsonRpcProvider(ARC_RPC_URL);
-                }
+            document.getElementById('usdcBalance').innerText = "Syncing...";
+            document.getElementById('balanceStatus').innerText = "Connecting to Arc Nodes...";
+            document.getElementById('balanceStatus').style.color = "#38BDF8";
 
-                const usdcContract = new ethers.Contract(USDC_CONTRACT_ADDRESS, ERC20_ABI, targetProvider);
-                
-                // স্মার্ট কন্টাক্ট থেকে সরাসরি ডাটা কল
-                const rawBalance = await usdcContract.balanceOf(address);
-                const decimals = await usdcContract.decimals();
-                const formattedBalance = ethers.formatUnits(rawBalance, decimals);
-                
-                // UI সফলভাবে আপডেট করা
-                document.getElementById('usdcBalance').innerText = `$${parseFloat(formattedBalance).toFixed(2)} USDC`;
-                document.getElementById('balanceStatus').innerText = "Arc Testnet Live Balance";
-                document.getElementById('balanceStatus').style.color = "#34D399"; // সবুজ রঙের সাকসেস টেক্সট
-            } catch (e) {
-                console.error("Critical Contract Reading Error:", e);
-                // যদি ওয়ালেট সিঙ্ক পুরোপুরি ফেইল করে, সরাসরি পাবলিক RPC দিয়ে রিয়াল ডাটা রেন্ডার করবে
+            // স্ট্র্যাটেজি ১: ইনজেক্টেড ওয়ালেট প্রোভাইডার দিয়ে ট্রাই করা
+            if (globalProvider) {
                 try {
-                    const fallbackProvider = new ethers.JsonRpcProvider(ARC_RPC_URL);
-                    const usdcContract = new ethers.Contract(USDC_CONTRACT_ADDRESS, ERC20_ABI, fallbackProvider);
+                    const usdcContract = new ethers.Contract(USDC_CONTRACT_ADDRESS, ERC20_ABI, globalProvider);
                     const rawBalance = await usdcContract.balanceOf(address);
-                    const formattedBalance = ethers.formatUnits(rawBalance, 6); // standard fall-back decimal
+                    const decimals = await usdcContract.decimals().catch(() => 6);
+                    const formattedBalance = ethers.formatUnits(rawBalance, decimals);
                     
-                    document.getElementById('usdcBalance').innerText = `$${parseFloat(formattedBalance).toFixed(2)} USDC`;
-                    document.getElementById('balanceStatus').innerText = "Arc Network RPC Synced";
-                    document.getElementById('balanceStatus').style.color = "#34D399";
-                } catch(rpcErr) {
-                    document.getElementById('usdcBalance').innerText = "$0.00";
-                    document.getElementById('balanceStatus').innerText = "Network Sync Timeout";
-                    document.getElementById('balanceStatus').style.color = "#EF4444";
+                    renderBalanceUI(formattedBalance);
+                    return;
+                } catch (e) {
+                    console.warn("Wallet Provider sync delayed, switching to Public Fallback RPC...");
                 }
             }
+
+            // স্ট্র্যাটেজি ২: পাবলিক মাল্টি-আরপিসি ফেইলওভার গেটওয়ে (টাইমআউট ব্রেক করার জন্য)
+            for (let rpcUrl of ARC_RPC_URLS) {
+                try {
+                    const fallbackProvider = new ethers.JsonRpcProvider(rpcUrl, undefined, {
+                        timeout: 5000 // ৫ সেকেন্ডের হার্ড টাইমআউট সীমা
+                    });
+                    const usdcContract = new ethers.Contract(USDC_CONTRACT_ADDRESS, ERC20_ABI, fallbackProvider);
+                    const rawBalance = await usdcContract.balanceOf(address);
+                    const formattedBalance = ethers.formatUnits(rawBalance, 6); // Testnet USDC Standard
+                    
+                    renderBalanceUI(formattedBalance);
+                    return; // সফল হলে লুপ ব্রেক করবে
+                } catch (rpcErr) {
+                    console.error(`Node ${rpcUrl} failed or timed out. Trying next...`);
+                }
+            }
+
+            // যদি সব মেকানিজম ফেইল করে তাহলে হার্ডকোড ফ্যালব্যাক জিরো স্টেটে যাবে না, শেষ চেষ্টা করবে
+            document.getElementById('usdcBalance').innerText = "0.00 USDC";
+            document.getElementById('balanceStatus').innerText = "Sync Error: Please Refresh Page";
+            document.getElementById('balanceStatus').style.color = "#EF4444";
+        }
+
+        function renderBalanceUI(balance) {
+            document.getElementById('usdcBalance').innerText = `$${parseFloat(balance).toFixed(2)} USDC`;
+            document.getElementById('balanceStatus').innerText = "Arc Testnet Live Balance";
+            document.getElementById('balanceStatus').style.color = "#34D399"; // নিখুঁত সবুজ সাকসেস ব্র্যান্ডিং
         }
 
         function updateWalletUI(address) {
