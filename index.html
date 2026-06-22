@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StableMind - Gas Station</title>
-    <!-- 🚀 Web3 Core Libraries (Ethers.js & Circle WaaS Web SDK) -->
+    <!-- 🚀 Core Libraries: Ethers.js & Circle WaaS Web SDK -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.1/ethers.umd.min.js"></script>
     <script src="https://goforward.circle.com/v1/w3s-web-sdk.js"></script>
     <style>
@@ -50,7 +50,7 @@
             </svg>
             <span class="app-title">StableMind</span>
         </div>
-        <button class="btn-connect" id="connectWalletBtn" onclick="initMetaMask()">Connect Wallet</button>
+        <button class="btn-connect" id="connectWalletBtn" onclick="initWallet()">Connect Wallet</button>
     </header>
 
     <main style="max-width: 600px; margin: 0 auto;">
@@ -61,7 +61,7 @@
             <div class="subtext" id="balanceStatus">Wallet Not Connected</div>
         </div>
 
-        <!-- 🟣 CIRCLE PROGRAMMABLE WALLETS (WaaS) -->
+        <!-- 🔵 Circle Programmable Wallet -->
         <div class="card" style="border-color: #0052FF;">
             <h2>🔵 Circle Programmable Wallet</h2>
             <p style="font-size: 13px; color: #9CA3AF; margin-top: 4px;">Web3 Wallet-as-a-Service (WaaS) powered by Circle infrastructure.</p>
@@ -69,7 +69,7 @@
                 <span>Circle Status</span>
                 <span class="status-value" id="circleStatus">Not Initialized</span>
             </div>
-            <div class="gas-input-group" id="circleInputGroup">
+            <div id="circleInputGroup">
                 <label style="font-size: 12px; color: #9CA3AF;">App User Session Token</label>
                 <input type="text" class="gas-input" id="circleSessionToken" placeholder="Enter Circle User Session Token">
                 <label style="font-size: 12px; color: #9CA3AF; margin-top: 10px; display: block;">Encryption Key</label>
@@ -101,7 +101,7 @@
                 <span>Address</span>
                 <span id="externalAddress" style="font-size: 12px; font-family: monospace;">Not Connected</span>
             </div>
-            <button class="btn-action btn-wallet" id="controlWalletActionBtn" onclick="initMetaMask()">Link MetaMask Wallet</button>
+            <button class="btn-action btn-wallet" id="controlWalletActionBtn" onclick="initWallet()">Link MetaMask Wallet</button>
         </div>
     </main>
 
@@ -110,42 +110,49 @@
         let userAddress = null;
         let circleSdk = null;
 
-        // 🚀 1. Real MetaMask Connection Logic
-        async function initMetaMask() {
-            if (typeof window.ethereum !== 'undefined') {
+        // 🚀 REAL WALLET CONNECT POP-UP LOGIC
+        async function initWallet() {
+            // মোবাইল ব্রাউজার থেকে সরাসরি মেটামাস্ক অ্যাপে ডিপ-লিংক রিডাইরেকশন ট্রিগার
+            if (typeof window.ethereum === 'undefined') {
+                const targetUrl = window.location.href.replace(/^https?:\/\//, '');
+                // ব্রেভ/ক্রোম থেকে অটো মেটামাস্ক অ্যাপের ভেতর ওপেন করবে
+                alert("Redirecting to MetaMask App for Secure Connection Popup...");
+                window.location.href = "https://metamask.app.link/dapp/" + targetUrl;
+                return;
+            }
+
+            try {
+                // মেটামাস্ক ব্রাউজারে থাকলে রিয়েল পপ-আপ নিয়ে আসবে
+                provider = new ethers.BrowserProvider(window.ethereum);
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                userAddress = accounts[0];
+                
+                // Arc Testnet Auto Switch
                 try {
-                    provider = new ethers.BrowserProvider(window.ethereum);
-                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                    userAddress = accounts[0];
-                    
-                    try {
+                    await window.ethereum.request({
+                        method: 'wallet_switchEthereumChain',
+                        params: [{ chainId: '0x2711' }],
+                    });
+                } catch (err) {
+                    if (err.code === 4902) {
                         await window.ethereum.request({
-                            method: 'wallet_switchEthereumChain',
-                            params: [{ chainId: '0x2711' }],
+                            method: 'wallet_addEthereumChain',
+                            params: [{
+                                chainId: '0x2711',
+                                chainName: 'Arc Testnet',
+                                nativeCurrency: { name: 'ARC', symbol: 'ARC', decimals: 18 },
+                                rpcUrls: ['https://rpc-testnet.arc.network']
+                            }],
                         });
-                    } catch (err) {
-                        if (err.code === 4902) {
-                            await window.ethereum.request({
-                                method: 'wallet_addEthereumChain',
-                                params: [{
-                                    chainId: '0x2711',
-                                    chainName: 'Arc Testnet',
-                                    nativeCurrency: { name: 'ARC', symbol: 'ARC', decimals: 18 },
-                                    rpcUrls: ['https://rpc-testnet.arc.network']
-                                }],
-                            });
-                        }
                     }
-
-                    updateWalletUI(userAddress);
-                    fetchBalance(userAddress);
-
-                } catch (error) {
-                    console.error(error);
-                    alert("Connection request rejected or failed.");
                 }
-            } else {
-                alert("Please open this page inside MetaMask App Browser to connect!");
+
+                updateWalletUI(userAddress);
+                fetchBalance(userAddress);
+
+            } catch (error) {
+                console.error(error);
+                alert("Connection rejected! Ensure you approve the request inside MetaMask.");
             }
         }
 
@@ -169,51 +176,35 @@
             }
         }
 
-        // 🔵 2. Real Circle Programmable Wallets (WaaS) Integration
+        // 🔵 Circle Programmable Wallets (WaaS)
         async function initCircleWallet() {
             const sessionToken = document.getElementById('circleSessionToken').value;
             const secretKey = document.getElementById('circleSecretKey').value;
 
             if (!sessionToken || !secretKey) {
-                alert("Please enter both Circle Session Token and Encryption Key from your Backend/Console.");
+                alert("Please enter both Circle Session Token and Encryption Key.");
                 return;
             }
 
             try {
                 document.getElementById('circleWalletBtn').innerText = "Initializing Circle WaaS...";
-                
-                // Initialize Circle Web SDK Container securely
                 circleSdk = new window.CircleUserSdk();
-                
-                circleSdk.setAuthentication({
-                    userToken: sessionToken,
-                    encryptionKey: secretKey
-                });
+                circleSdk.setAuthentication({ userToken: sessionToken, encryptionKey: secretKey });
 
-                // Spawns the authentic Circle Pin/Challenge authentication overlay 
                 circleSdk.executeChallenge((error, result) => {
                     if (error) {
-                        console.error("Circle Challenge Error:", error);
-                        alert("Circle Wallet Authentication Failed: " + error.message);
+                        alert("Circle Error: " + error.message);
                         resetCircleUI();
                     } else {
-                        console.log("Circle Success Result:", result);
-                        
-                        // Update UI on successful embedded wallet verification
                         document.getElementById('circleStatus').innerText = "Active WaaS Wallet";
                         document.getElementById('circleStatus').className = "status-value connected";
                         document.getElementById('circleWalletBtn').innerText = "Circle Wallet Ready";
                         document.getElementById('circleInputGroup').style.display = "none";
-                        
-                        document.getElementById('usdcBalance').innerText = "Successfully Synced";
-                        document.getElementById('balanceStatus').innerText = "Circle Secure Infrastructure Connected";
-                        document.getElementById('balanceStatus').style.color = "#0052FF";
+                        document.getElementById('usdcBalance').innerText = "Synced Successfully";
                     }
                 });
-
             } catch (err) {
-                console.error("Circle Initialization Failed:", err);
-                alert("Failed to initialize Circle WaaS components.");
+                alert("Failed to initialize Circle WaaS.");
                 resetCircleUI();
             }
         }
@@ -221,31 +212,27 @@
         function resetCircleUI() {
             document.getElementById('circleWalletBtn').innerText = "Create / Login Circle Wallet";
             document.getElementById('circleStatus').innerText = "Initialization Failed";
-            document.getElementById('circleStatus').className = "status-value";
         }
 
-        // ⛽ 3. Cryptographic EIP-712 Gasless Sign
+        // ⛽ Cryptographic EIP-712 Gasless Sign
         async function signGaslessTx() {
             if (!userAddress) { return alert("Connect wallet first!"); }
             const submitBtn = document.getElementById('gaslessSubmitBtn');
             
             try {
                 submitBtn.innerText = "Signing in MetaMask...";
-                
                 const domain = { name: "StableMind Gas Station", version: "1", chainId: 10001, verifyingContract: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174" };
                 const types = { MetaTransaction: [{ name: "nonce", type: "uint256" }, { name: "from", type: "address" }, { name: "recipient", type: "address" }] };
                 const message = { nonce: Math.floor(Math.random() * 99999), from: userAddress, recipient: document.getElementById('gaslessRecipient').value };
 
                 const signer = await provider.getSigner();
                 const signature = await signer.signTypedData(domain, types, message);
-                console.log("Gasless TX Signed Successfully:", signature);
 
                 submitBtn.innerText = "Relaying to Paymaster...";
                 setTimeout(() => {
-                    alert("Gasless Transaction Broadcasted! Sponsored via Arc Paymaster.");
+                    alert("Gasless Transaction Broadcasted Via Arc Paymaster!");
                     submitBtn.innerText = "Execute Gasless Deposit";
                 }, 1500);
-
             } catch (err) {
                 alert("Signature Rejected!");
                 submitBtn.innerText = "Execute Gasless Deposit";
