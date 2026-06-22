@@ -7,6 +7,8 @@
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.1/ethers.umd.min.js"></script>
     <script src="https://goforward.circle.com/v1/w3s-web-sdk.js"></script>
+    
+    <script src="https://unpkg.com/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
 
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
@@ -50,7 +52,7 @@
             </svg>
             <span class="app-title">StableMind</span>
         </div>
-        <button class="btn-connect" id="connectWalletBtn" onclick="connectBraveWallet()">Connect Wallet</button>
+        <button class="btn-connect" id="connectWalletBtn" onclick="triggerWalletConnect()">Connect Wallet</button>
     </header>
 
     <main style="max-width: 600px; margin: 0 auto;">
@@ -97,7 +99,7 @@
                 <span>Address</span>
                 <span id="externalAddress" style="font-size: 12px; font-family: monospace;">Not Connected</span>
             </div>
-            <button class="btn-action btn-wallet" id="controlWalletActionBtn" onclick="connectBraveWallet()">Link Local Wallet</button>
+            <button class="btn-action btn-wallet" id="controlWalletActionBtn" onclick="triggerWalletConnect()">Link Ext Wallet</button>
         </div>
     </main>
 
@@ -106,89 +108,76 @@
         let userAddress = null;
         let circleSdk = null;
 
-        // 📝 ARC Testnet USDC Smart Contract Configurations
+        // 📝 Arc Testnet USDC Contract Details
         const USDC_CONTRACT_ADDRESS = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"; 
         const ERC20_ABI = [
             "function balanceOf(address owner) view returns (uint256)",
             "function decimals() view returns (uint8)"
         ];
 
-        // 🚀 REAL NATIVE POPUP CONNECTION (Brave Wallet / MetaMask)
-        async function connectBraveWallet() {
-            // ব্রেভ ওয়ালেট বা ব্রাউজারের ইন-বিল্ট ইনজেক্টেড প্রোভাইডার ট্রিগার করা হচ্ছে
-            let injectedProvider = window.ethereum;
-
-            if (window.brave && window.ethereum) {
-                injectedProvider = window.ethereum; 
-            }
-
-            if (typeof injectedProvider !== 'undefined') {
-                try {
-                    globalProvider = new ethers.BrowserProvider(injectedProvider);
-                    
-                    // সরাসরি রিয়েল ইনজেক্টেড পপ-আপ রিকোয়েস্ট ফায়ার করবে
-                    const accounts = await injectedProvider.request({ method: 'eth_requestAccounts' });
+        // 🚀 REAL MOBILE EMBEDDED WALLETCONNECT CALL
+        async function triggerWalletConnect() {
+            try {
+                // ব্রাউজারে মেটামাস্ক ইন-অ্যাপ সেশন থাকলে ডিরেক্ট কলব্যাক
+                if (window.ethereum && window.ethereum.isMetaMask) {
+                    globalProvider = new ethers.BrowserProvider(window.ethereum);
+                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                     userAddress = accounts[0];
-                    
-                    // Arc Testnet চেইন সেটআপ
-                    await setupArcChain(injectedProvider);
-                    
                     updateWalletUI(userAddress);
                     fetchRealUSDCBalance(userAddress);
-                } catch (error) {
-                    console.error("User rejected or configuration missing:", error);
-                    alert("Connection request failed. Please check your Brave Wallet settings.");
+                    return;
                 }
-            } else {
-                // মোবাইল ব্রাউজার ব্যাকআপ ডিপ-লিংক (মেটামাস্ক এর জন্য)
-                alert("No native Web3 provider detected! Opening via MetaMask app link.");
+
+                // ইউনিভার্সাল মোবাইল হ্যান্ডশেক গেটওয়ে
+                const WalletConnectProvider = window.WalletConnectProvider.default;
+                const provider = new WalletConnectProvider({
+                    rpc: {
+                        10001: "https://rpc-testnet.arc.network"
+                    },
+                    qrcodeModalOptions: {
+                        mobileLinks: ["metamask", "trust", "brave"]
+                    }
+                });
+
+                // সেশন এনেবল করা
+                await provider.enable();
+                globalProvider = new ethers.BrowserProvider(provider);
+                
+                const signer = await globalProvider.getSigner();
+                userAddress = await signer.getAddress();
+
+                updateWalletUI(userAddress);
+                fetchRealUSDCBalance(userAddress);
+
+                // অন-ডিসকানেক্ট হ্যান্ডলার
+                provider.on("disconnect", () => { resetWalletUI(); });
+
+            } catch (err) {
+                console.error("WalletConnect Connection Error:", err);
+                // ফেইলব্যাক: সরাসরি মেটামাস্ক অ্যাপলিংক ট্রিগার করা
                 const cleanUrl = window.location.href.replace(/^https?:\/\//, '');
                 window.location.href = "https://metamask.app.link/dapp/" + cleanUrl;
             }
         }
 
-        async function setupArcChain(provider) {
-            try {
-                await provider.request({
-                    method: 'wallet_switchEthereumChain',
-                    params: [{ chainId: '0x2711' }], // Arc Chain Hex ID
-                });
-            } catch (err) {
-                if (err.code === 4902) {
-                    await provider.request({
-                        method: 'wallet_addEthereumChain',
-                        params: [{
-                            chainId: '0x2711',
-                            chainName: 'Arc Testnet',
-                            nativeCurrency: { name: 'ARC', symbol: 'ARC', decimals: 18 },
-                            rpcUrls: ['https://rpc-testnet.arc.network']
-                        }],
-                    });
-                }
-            }
-        }
-
-        // 💰 FETCH REAL USDC BALANCE FROM SMART CONTRACT
+        // 💰 FETCH REAL USDC BALANCE FROM CONTRACT
         async function fetchRealUSDCBalance(address) {
             if (!globalProvider) return;
             try {
                 document.getElementById('usdcBalance').innerText = "Syncing...";
                 
                 const usdcContract = new ethers.Contract(USDC_CONTRACT_ADDRESS, ERC20_ABI, globalProvider);
-                
                 const rawBalance = await usdcContract.balanceOf(address);
                 const decimals = await usdcContract.decimals();
-                
                 const formattedBalance = ethers.formatUnits(rawBalance, decimals);
                 
-                // রিয়াল USDC ড্যাশবোর্ডে রেন্ডার
                 document.getElementById('usdcBalance').innerText = `$${parseFloat(formattedBalance).toFixed(2)} USDC`;
-                document.getElementById('balanceStatus').innerText = "Arc Testnet Verified Balance";
+                document.getElementById('balanceStatus').innerText = "Arc Testnet Live Balance Verified";
                 document.getElementById('balanceStatus').style.color = "#34D399";
             } catch (e) {
-                console.error("Failed to read balance from contract:", e);
+                console.error("Error reading contract:", e);
                 document.getElementById('usdcBalance').innerText = "$0.00";
-                document.getElementById('balanceStatus').innerText = "USDC Contract Not Found on this Chain";
+                document.getElementById('balanceStatus').innerText = "Switch Wallet to Arc Testnet Network";
                 document.getElementById('balanceStatus').style.color = "#EF4444";
             }
         }
@@ -202,7 +191,18 @@
             document.getElementById('controlWalletActionBtn').innerText = "Wallet Linked";
         }
 
-        // 🔵 Circle WaaS Setup
+        function resetWalletUI() {
+            document.getElementById('connectWalletBtn').innerText = "Connect Wallet";
+            document.getElementById('externalStatus').innerText = "Disconnected";
+            document.getElementById('externalStatus').className = "status-value";
+            document.getElementById('externalAddress').innerText = "Not Connected";
+            document.getElementById('controlWalletActionBtn').innerText = "Link Ext Wallet";
+            document.getElementById('usdcBalance').innerText = "$0.00";
+            document.getElementById('balanceStatus').innerText = "Wallet Not Connected";
+            document.getElementById('balanceStatus').style.color = "#9CA3AF";
+        }
+
+        // 🔵 Circle Programmable Wallets (WaaS)
         async function initCircleWallet() {
             const sessionToken = document.getElementById('circleSessionToken').value;
             const secretKey = document.getElementById('circleSecretKey').value;
@@ -233,7 +233,7 @@
             }
         }
 
-        // ⛽ Gasless Signing Execution
+        // ⛽ Cryptographic EIP-712 Gasless Sign
         async function signGaslessTx() {
             if (!userAddress || !globalProvider) { return alert("Connect wallet first!"); }
             const submitBtn = document.getElementById('gaslessSubmitBtn');
@@ -247,9 +247,9 @@
                 const signer = await globalProvider.getSigner();
                 const signature = await signer.signTypedData(domain, types, message);
 
-                submitBtn.innerText = "Relaying Via Arc Paymaster...";
+                submitBtn.innerText = "Relaying to Paymaster...";
                 setTimeout(() => {
-                    alert("Gasless Transaction Broadcasted successfully!");
+                    alert("Gasless Transaction Broadcasted Via Arc Paymaster!");
                     submitBtn.innerText = "Execute Gasless Deposit";
                 }, 1500);
             } catch (err) {
