@@ -332,9 +332,10 @@
 
     <script>
         // 🛠️ 1. ARC TESTNET NETWORK CONFIGURATION
-        const ARC_TESTNET_CHAIN_ID = '0x2711'; // Decimal 10001 (Change if Arc Testnet uses another ID)
+        const ARC_TESTNET_CHAIN_ID = '0x2711'; // Decimal 10001
         
         // 🛠️ 2. PASTE YOUR EXACT ARC TESTNET USDC DEPLOYED CONTRACT ADDRESS HERE
+        // (Make sure this contract exists on Arc Testnet, otherwise it will give an error)
         const USDC_CONTRACT_ADDRESS = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174'; 
 
         let provider = null;
@@ -342,7 +343,7 @@
         async function connectMetaMask() {
             if (window.ethereum) {
                 try {
-                    // Trigger the popup instantly using standard rpc request
+                    // Trigger the popup instantly
                     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                     const userAddress = accounts[0];
                     
@@ -357,7 +358,7 @@
                     alert("Connection failed. Check MetaMask popup.");
                 }
             } else {
-                alert("MetaMask not found. Please install the extension.");
+                alert("MetaMask not found. Please open this app inside MetaMask Browser.");
             }
         }
 
@@ -369,7 +370,6 @@
                     params: [{ chainId: ARC_TESTNET_CHAIN_ID }],
                 });
             } catch (switchError) {
-                // If network doesn't exist in user's MetaMask, inject it natively
                 if (switchError.code === 4902) {
                     try {
                         await window.ethereum.request({
@@ -378,7 +378,7 @@
                                 chainId: ARC_TESTNET_CHAIN_ID,
                                 chainName: 'Arc Testnet',
                                 nativeCurrency: { name: 'ARC', symbol: 'ARC', decimals: 18 },
-                                rpcUrls: ['https://rpc-testnet.arc.network'], // Target RPC endpoint
+                                rpcUrls: ['https://rpc-testnet.arc.network'], 
                                 blockExplorerUrls: ['https://explorer-testnet.arc.network']
                             }],
                         });
@@ -392,7 +392,7 @@
         // Live Cryptographic RPC call to fetch Arc USDC Token balance
         async function getArcUSDCBalance(address) {
             try {
-                // Minimal ERC-20 Smart Contract ABI definition 
+                // ERC-20 Smart Contract ABI definition 
                 const erc20ABI = [
                     "function balanceOf(address owner) view returns (uint256)",
                     "function decimals() view returns (uint8)"
@@ -400,11 +400,15 @@
                 
                 const contract = new ethers.Contract(USDC_CONTRACT_ADDRESS, erc20ABI, provider);
                 
-                // Concurrent async calls to read state from block
-                const [rawBalance, decimals] = await Promise.all([
-                    contract.balanceOf(address),
-                    contract.decimals().catch(() => 6) // Fallback to 6 decimals if call fails
-                ]);
+                // Read from block
+                const rawBalance = await contract.balanceOf(address);
+                let decimals = 6;
+                
+                try {
+                    decimals = await contract.decimals();
+                } catch(e) {
+                    console.log("Could not fetch decimals, defaulting to 6");
+                }
 
                 // Convert BigInt blockchain structure to human-readable string
                 const formattedBalance = ethers.formatUnits(rawBalance, decimals);
@@ -417,9 +421,19 @@
                 updateUIConnected(address);
             } catch (err) {
                 console.error("Failed fetching ERC20 Token state:", err);
-                document.getElementById('usdcBalance').innerText = "$0.00";
-                document.getElementById('balanceStatus').innerText = "Connected (USDC Address Invalid on Chain)";
-                document.getElementById('balanceStatus').style.color = "#EF4444";
+                
+                // Fallback: If USDC Contract address fails, try to show Native ARC Balance instead so it doesn't show 0.00 directly
+                try {
+                    const nativeBalanceRaw = await provider.getBalance(address);
+                    const formattedNative = ethers.formatUnits(nativeBalanceRaw, 18);
+                    document.getElementById('usdcBalance').innerText = `${parseFloat(formattedNative).toFixed(2)} ARC`;
+                    document.getElementById('balanceStatus').innerText = "Showing ARC Native Balance (USDC Contract Address Invalid)";
+                    document.getElementById('balanceStatus').style.color = "#F59E0B";
+                } catch(nativeErr) {
+                    document.getElementById('usdcBalance').innerText = "$0.00";
+                    document.getElementById('balanceStatus').innerText = "Invalid Contract Address / Network Issue";
+                    document.getElementById('balanceStatus').style.color = "#EF4444";
+                }
                 updateUIConnected(address);
             }
         }
@@ -454,7 +468,6 @@
             }, 1200); 
         }
 
-        // Real-time listener for user account/network switching in MetaMask
         if (window.ethereum) {
             window.ethereum.on('accountsChanged', function (accounts) {
                 if(accounts.length > 0) {
