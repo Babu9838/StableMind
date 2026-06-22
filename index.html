@@ -115,36 +115,36 @@
         let userAddress = null;
         let circleSdk = null;
 
-        // 🚀 1. REAL HYBRID WALLET POP-UP LOGIC (Instant Response)
+        // 📝 ARC Testnet USDC Contract Details
+        const USDC_CONTRACT_ADDRESS = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"; 
+        const ERC20_ABI = [
+            "function balanceOf(address owner) view returns (uint256)",
+            "function decimals() view returns (uint8)"
+        ];
+
+        // 🚀 1. REAL HYBRID WALLET CONNECT LOGIC
         async function initRealWallet() {
-            // যদি ইউজার অলরেডি মেটামাস্ক অ্যাপের ইন-অ্যাপ ব্রাউজারে থাকে
             if (typeof window.ethereum !== 'undefined') {
                 try {
                     globalProvider = new ethers.BrowserProvider(window.ethereum);
                     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                     userAddress = accounts[0];
-                    setupArcChain();
+                    await setupArcChain();
                     updateWalletUI(userAddress);
-                    fetchBalance(userAddress);
+                    fetchRealUSDCBalance(userAddress);
                     return;
                 } catch (e) {
                     console.error("In-App Direct Connection Failed:", e);
                 }
             }
 
-            // সাধারণ ব্রাউজার (যেমন ব্রেভ/ক্রোম) এর জন্য ইনস্ট্যান্ট ওয়ালেটকানেক্ট পপ-আপ ট্রিগার
             try {
                 const WalletConnectProvider = window.WalletConnectProvider.default;
                 const walletConnectProvider = new WalletConnectProvider({
-                    rpc: {
-                        10001: "https://rpc-testnet.arc.network"
-                    },
-                    qrcodeModalOptions: {
-                        mobileLinks: ["metamask", "trust"]
-                    }
+                    rpc: { 10001: "https://rpc-testnet.arc.network" },
+                    qrcodeModalOptions: { mobileLinks: ["metamask", "trust"] }
                 });
 
-                // ইভেন্ট ট্রিগার করে পপআপ বা রিয়েল হ্যান্ডশেক নিশ্চিত করা
                 await walletConnectProvider.enable();
                 globalProvider = new ethers.BrowserProvider(walletConnectProvider);
                 
@@ -152,16 +152,12 @@
                 userAddress = await signer.getAddress();
 
                 updateWalletUI(userAddress);
-                fetchBalance(userAddress);
+                fetchRealUSDCBalance(userAddress);
 
-                // ডিসকানেক্ট ইভেন্ট লিসেনার
-                walletConnectProvider.on("disconnect", (code, reason) => {
-                    resetWalletUI();
-                });
+                walletConnectProvider.on("disconnect", () => { resetWalletUI(); });
 
             } catch (error) {
-                console.error("WalletConnect integration error:", error);
-                // মেটামাস্ক অ্যাপে সরাসরি ডিপ-লিংক ব্যাকআপ
+                console.error("WalletConnect Error:", error);
                 const cleanUrl = window.location.href.replace(/^https?:\/\//, '');
                 window.location.href = "https://metamask.app.link/dapp/" + cleanUrl;
             }
@@ -188,6 +184,34 @@
             }
         }
 
+        // 💰 REAL USDC BALANCE FETCH FUNCTION
+        async function fetchRealUSDCBalance(address) {
+            if (!globalProvider) return;
+            try {
+                document.getElementById('usdcBalance').innerText = "Loading...";
+                
+                // Smart Contract ইনস্ট্যান্স তৈরি
+                const usdcContract = new ethers.Contract(USDC_CONTRACT_ADDRESS, ERC20_ABI, globalProvider);
+                
+                // কন্ট্যাক্ট থেকে রিয়াল ব্যালেন্স এবং ডেসিমেল ডাটা কল
+                const rawBalance = await usdcContract.balanceOf(address);
+                const decimals = await usdcContract.decimals();
+                
+                // ইথার্স দিয়ে ডাটা ফরম্যাট করা (USDC সাধারণত ৬ বা ১৮ ডেসিমেল হয়ে থাকে)
+                const formattedBalance = ethers.formatUnits(rawBalance, decimals);
+                
+                // ড্যাশবোর্ডে রিয়াল ব্যালেন্স আপডেট
+                document.getElementById('usdcBalance').innerText = `$${parseFloat(formattedBalance).toFixed(2)} USDC`;
+                document.getElementById('balanceStatus').innerText = "Arc Testnet Live Balance";
+                document.getElementById('balanceStatus').style.color = "#34D399";
+            } catch (e) {
+                console.error("Error fetching USDC balance:", e);
+                document.getElementById('usdcBalance').innerText = "$0.00";
+                document.getElementById('balanceStatus').innerText = "Failed to fetch USDC data";
+                document.getElementById('balanceStatus').style.color = "#EF4444";
+            }
+        }
+
         function updateWalletUI(address) {
             const shortAddr = address.substring(0, 6) + "..." + address.substring(address.length - 4);
             document.getElementById('connectWalletBtn').innerText = shortAddr;
@@ -205,18 +229,7 @@
             document.getElementById('controlWalletActionBtn').innerText = "Link MetaMask Wallet";
             document.getElementById('usdcBalance').innerText = "$0.00";
             document.getElementById('balanceStatus').innerText = "Wallet Not Connected";
-        }
-
-        async function fetchBalance(address) {
-            if (!globalProvider) return;
-            try {
-                const bal = await globalProvider.getBalance(address);
-                document.getElementById('usdcBalance').innerText = `${parseFloat(ethers.formatUnits(bal, 18)).toFixed(4)} ARC`;
-                document.getElementById('balanceStatus').innerText = "Arc Network Verified";
-                document.getElementById('balanceStatus').style.color = "#34D399";
-            } catch (e) {
-                document.getElementById('usdcBalance').innerText = "0.00 ARC";
-            }
+            document.getElementById('balanceStatus').style.color = "#9CA3AF";
         }
 
         // 🔵 2. Circle Programmable Wallets (WaaS)
@@ -243,7 +256,7 @@
                         document.getElementById('circleStatus').className = "status-value connected";
                         document.getElementById('circleWalletBtn').innerText = "Circle Wallet Ready";
                         document.getElementById('circleInputGroup').style.display = "none";
-                        document.getElementById('usdcBalance').innerText = "Synced Successfully";
+                        document.getElementById('balanceStatus').innerText = "Circle Secure Infrastructure Connected";
                     }
                 });
             } catch (err) {
