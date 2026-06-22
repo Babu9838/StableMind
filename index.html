@@ -77,12 +77,12 @@
 
     <script>
         let userAddress;
-        const ARC_CHAIN_HEX = "0x2712"; // 10002 Arc Testnet
+        const ARC_CHAIN_HEX = "0x2712"; 
 
         async function connectWallet() {
             if (!window.ethereum) return alert("No Web3 Provider Found!");
             try {
-                // ১. স্ট্রিক্টলি ওয়ালেটকে Arc Testnet-এ ফোর্স সুইচ করানো হচ্ছে
+                // ১. ওয়ালেটে Arc Testnet সুইচ পপআপ ট্রিগার
                 try {
                     await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: ARC_CHAIN_HEX }] });
                 } catch (e) {
@@ -99,6 +99,7 @@
                     }
                 }
 
+                // ২. ওয়ালেট অ্যাকাউন্ট কানেক্ট পপআপ
                 const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                 userAddress = accounts[0];
                 
@@ -108,33 +109,28 @@
                 document.getElementById('externalAddress').innerText = userAddress;
                 
                 updateBalance();
-            } catch (err) { console.error(err); }
+            } catch (err) { alert("Connection rejected!"); }
         }
 
         async function updateBalance() {
             document.getElementById('balanceStatus').innerText = "Syncing Balance...";
             try {
-                // ২. মোবাইল ইন-অ্যাপ ব্রাউজারের রেস্ট্রিকশন বাইপাস করতে ডিরেক্ট ওয়ালেট মেমোরি ব্যালেন্স মেথড কল
+                // ৩. মোবাইল ব্রাউজারের রেস্ট্রিকশন এড়াতে সরাসরি ওয়ালেট নোড ব্যালেন্স রিড
                 const rawBalanceHex = await window.ethereum.request({
                     method: "eth_getBalance",
                     params: [userAddress, "latest"]
                 });
 
                 if (rawBalanceHex) {
-                    // হেক্সাডেসিমেল ভ্যালুকে সরাসরি ইথার ইউনিটে কনভার্ট করা হচ্ছে
                     const weiBigInt = BigInt(rawBalanceHex);
                     const finalBalance = Number(weiBigInt) / 1e18; 
                     
                     document.getElementById('usdcBalance').innerText = `${finalBalance.toFixed(2)} USDC`;
                     document.getElementById('balanceStatus').innerText = "Arc Testnet Connected Successfully";
                     document.getElementById('balanceStatus').style.color = "#34D399";
-                } else {
-                    throw new Error("Empty Balance Payload");
                 }
             } catch (e) {
                 document.getElementById('usdcBalance').innerText = "0.00 USDC";
-                document.getElementById('balanceStatus').innerText = "Arc Testnet Connected Successfully";
-                document.getElementById('balanceStatus').style.color = "#34D399";
             }
         }
 
@@ -168,7 +164,7 @@
                     { nonce: Math.floor(Math.random() * 9999), from: userAddress, recipient: document.getElementById('gaslessRecipient').value }
                 );
                 
-                btn.innerText = "Relaying to Paymaster...";
+                btn.innerText = "Relaying...";
                 setTimeout(() => { alert("Gasless Tx Broadcasted!"); btn.innerText = "Execute Gasless Deposit"; }, 1200);
             } catch (err) { alert("Rejected!"); btn.innerText = "Execute Gasless Deposit"; }
         }
