@@ -4,15 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StableMind - Gas Station</title>
-    <!-- 🚀 Ethers.js CDN for Web3 Wallet Connect -->
+    <!-- 🚀 Web3 Core Libraries (Ethers.js & Circle WaaS Web SDK) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.1/ethers.umd.min.js"></script>
+    <script src="https://goforward.circle.com/v1/w3s-web-sdk.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
         body { background-color: #030508; color: #F3F4F6; padding: 15px; }
         header { background-color: #090D14; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #111823; border-radius: 10px; margin-bottom: 24px; box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5); }
         .brand-container { display: flex; align-items: center; gap: 12px; }
         .app-title { font-size: 26px; font-weight: 800; background: linear-gradient(135deg, #38BDF8, #0EA5E9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .btn-connect { background: linear-gradient(135deg, #0EA5E9, #2563EB); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+        .btn-connect { background: linear-gradient(135deg, #0EA5E9, #2563EB); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px; }
         .card { background-color: #090D14; padding: 24px; border-radius: 14px; border: 1px solid #111823; margin-bottom: 20px; }
         .value { font-size: 30px; font-weight: bold; color: #38BDF8; margin: 8px 0; }
         .subtext { font-size: 13px; color: #9CA3AF; }
@@ -22,6 +23,7 @@
         .gas-input { width: 100%; background-color: #030508; border: 1px solid #161F30; border-radius: 8px; padding: 12px; color: white; margin-top: 6px; font-family: monospace; font-size: 14px; }
         .btn-action { width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; border: none; margin-top: 12px; color: white; font-size: 14px; }
         .btn-gas { background: linear-gradient(135deg, #EC4899, #8B5CF6); }
+        .btn-circle { background: linear-gradient(135deg, #0052FF, #103178); border: none; }
         .btn-wallet { background-color: transparent; border: 1px solid #38BDF8; }
     </style>
 </head>
@@ -48,7 +50,7 @@
             </svg>
             <span class="app-title">StableMind</span>
         </div>
-        <button class="btn-connect" id="connectWalletBtn" onclick="initWallet()">Connect Wallet</button>
+        <button class="btn-connect" id="connectWalletBtn" onclick="initMetaMask()">Connect Wallet</button>
     </header>
 
     <main style="max-width: 600px; margin: 0 auto;">
@@ -57,6 +59,23 @@
             <h3>Total USDC Balance</h3>
             <div class="value" id="usdcBalance">$0.00</div>
             <div class="subtext" id="balanceStatus">Wallet Not Connected</div>
+        </div>
+
+        <!-- 🟣 CIRCLE PROGRAMMABLE WALLETS (WaaS) -->
+        <div class="card" style="border-color: #0052FF;">
+            <h2>🔵 Circle Programmable Wallet</h2>
+            <p style="font-size: 13px; color: #9CA3AF; margin-top: 4px;">Web3 Wallet-as-a-Service (WaaS) powered by Circle infrastructure.</p>
+            <div class="status-box">
+                <span>Circle Status</span>
+                <span class="status-value" id="circleStatus">Not Initialized</span>
+            </div>
+            <div class="gas-input-group" id="circleInputGroup">
+                <label style="font-size: 12px; color: #9CA3AF;">App User Session Token</label>
+                <input type="text" class="gas-input" id="circleSessionToken" placeholder="Enter Circle User Session Token">
+                <label style="font-size: 12px; color: #9CA3AF; margin-top: 10px; display: block;">Encryption Key</label>
+                <input type="text" class="gas-input" id="circleSecretKey" placeholder="Enter Encryption Secret Key">
+            </div>
+            <button class="btn-action btn-circle" id="circleWalletBtn" onclick="initCircleWallet()">Create / Login Circle Wallet</button>
         </div>
 
         <!-- Gas Station (Gas Abstraction) -->
@@ -82,23 +101,23 @@
                 <span>Address</span>
                 <span id="externalAddress" style="font-size: 12px; font-family: monospace;">Not Connected</span>
             </div>
-            <button class="btn-action btn-wallet" id="controlWalletActionBtn" onclick="initWallet()">Link MetaMask Wallet</button>
+            <button class="btn-action btn-wallet" id="controlWalletActionBtn" onclick="initMetaMask()">Link MetaMask Wallet</button>
         </div>
     </main>
 
     <script>
         let provider = null;
         let userAddress = null;
+        let circleSdk = null;
 
-        // 🚀 Real Web3 Connection Logic
-        async function initWallet() {
+        // 🚀 1. Real MetaMask Connection Logic
+        async function initMetaMask() {
             if (typeof window.ethereum !== 'undefined') {
                 try {
                     provider = new ethers.BrowserProvider(window.ethereum);
                     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                     userAddress = accounts[0];
                     
-                    // Arc Testnet Auto Chain Switch
                     try {
                         await window.ethereum.request({
                             method: 'wallet_switchEthereumChain',
@@ -150,7 +169,62 @@
             }
         }
 
-        // ⛽ Cryptographic EIP-712 Gasless Sign
+        // 🔵 2. Real Circle Programmable Wallets (WaaS) Integration
+        async function initCircleWallet() {
+            const sessionToken = document.getElementById('circleSessionToken').value;
+            const secretKey = document.getElementById('circleSecretKey').value;
+
+            if (!sessionToken || !secretKey) {
+                alert("Please enter both Circle Session Token and Encryption Key from your Backend/Console.");
+                return;
+            }
+
+            try {
+                document.getElementById('circleWalletBtn').innerText = "Initializing Circle WaaS...";
+                
+                // Initialize Circle Web SDK Container securely
+                circleSdk = new window.CircleUserSdk();
+                
+                circleSdk.setAuthentication({
+                    userToken: sessionToken,
+                    encryptionKey: secretKey
+                });
+
+                // Spawns the authentic Circle Pin/Challenge authentication overlay 
+                circleSdk.executeChallenge((error, result) => {
+                    if (error) {
+                        console.error("Circle Challenge Error:", error);
+                        alert("Circle Wallet Authentication Failed: " + error.message);
+                        resetCircleUI();
+                    } else {
+                        console.log("Circle Success Result:", result);
+                        
+                        // Update UI on successful embedded wallet verification
+                        document.getElementById('circleStatus').innerText = "Active WaaS Wallet";
+                        document.getElementById('circleStatus').className = "status-value connected";
+                        document.getElementById('circleWalletBtn').innerText = "Circle Wallet Ready";
+                        document.getElementById('circleInputGroup').style.display = "none";
+                        
+                        document.getElementById('usdcBalance').innerText = "Successfully Synced";
+                        document.getElementById('balanceStatus').innerText = "Circle Secure Infrastructure Connected";
+                        document.getElementById('balanceStatus').style.color = "#0052FF";
+                    }
+                });
+
+            } catch (err) {
+                console.error("Circle Initialization Failed:", err);
+                alert("Failed to initialize Circle WaaS components.");
+                resetCircleUI();
+            }
+        }
+
+        function resetCircleUI() {
+            document.getElementById('circleWalletBtn').innerText = "Create / Login Circle Wallet";
+            document.getElementById('circleStatus').innerText = "Initialization Failed";
+            document.getElementById('circleStatus').className = "status-value";
+        }
+
+        // ⛽ 3. Cryptographic EIP-712 Gasless Sign
         async function signGaslessTx() {
             if (!userAddress) { return alert("Connect wallet first!"); }
             const submitBtn = document.getElementById('gaslessSubmitBtn');
