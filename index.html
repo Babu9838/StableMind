@@ -107,7 +107,7 @@
         let userAddress = null;
         let circleSdk = null;
 
-        // 📝 Enhanced Arc Testnet Configurations
+        // 📝 Configurations
         const ARC_RPC_ENDPOINT = "https://rpc-testnet.arc.network";
         const USDC_CONTRACT_ADDRESS = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"; 
         const ERC20_MINIMAL_ABI = [
@@ -152,13 +152,15 @@
             }
         }
 
-        // 💰 STABLE PERSISTENT REAL BALANCE FETCH (Prevents Timeout/Sync Errors)
+        // 💰 100% REAL USDC DYNAMIC BALANCE FETCH 
         async function fetchRealUSDCBalance(address) {
             document.getElementById('usdcBalance').innerText = "Syncing...";
-            document.getElementById('balanceStatus').innerText = "Fetching Arc Balance...";
+            document.getElementById('balanceStatus').innerText = "Querying Live Contract...";
             document.getElementById('balanceStatus').style.color = "#38BDF8";
 
-            // 1st Layer: Wallet Provider theke direct call
+            let fetchSuccess = false;
+
+            // Method 1: Using connected global wallet provider instance
             if (globalProvider) {
                 try {
                     const usdcContract = new ethers.Contract(USDC_CONTRACT_ADDRESS, ERC20_MINIMAL_ABI, globalProvider);
@@ -167,31 +169,34 @@
                     const formattedBalance = ethers.formatUnits(rawBalance, decimals);
                     
                     renderBalanceUI(formattedBalance);
-                    return;
+                    fetchSuccess = true;
                 } catch (e) {
-                    console.warn("Direct wallet provider reading failed, switching to backup custom RPC layer...");
+                    console.warn("Wallet runtime context query delayed, running direct node fallback...");
                 }
             }
 
-            // 2nd Layer: Custom direct JSON-RPC client fallback
-            try {
-                const customRpcProvider = new ethers.JsonRpcProvider(ARC_RPC_ENDPOINT);
-                const backupContract = new ethers.Contract(USDC_CONTRACT_ADDRESS, ERC20_MINIMAL_ABI, customRpcProvider);
-                
-                const rawBalance = await backupContract.balanceOf(address);
-                const formattedBalance = ethers.formatUnits(rawBalance, 6); // Standard testnet fallback decimal
-                
-                renderBalanceUI(formattedBalance);
-            } catch (rpcErr) {
-                console.error("RPC Error:", rpcErr);
-                // If node is extremely unresponsive, simulate/render stable status instead of throwing ugly errors
-                document.getElementById('usdcBalance').innerText = "$100.00 USDC"; 
-                document.getElementById('balanceStatus').innerText = "Arc Testnet Cached Sync";
-                document.getElementById('balanceStatus').style.color = "#A78BFA";
+            // Method 2: Direct JSON-RPC connection overlay bypass (No simulation, purely reads actual on-chain data)
+            if (!fetchSuccess) {
+                try {
+                    const rpcProvider = new ethers.JsonRpcProvider(ARC_RPC_ENDPOINT);
+                    const directContract = new ethers.Contract(USDC_CONTRACT_ADDRESS, ERC20_MINIMAL_ABI, rpcProvider);
+                    
+                    const rawBalance = await directContract.balanceOf(address);
+                    const decimals = await directContract.decimals().catch(() => 6);
+                    const formattedBalance = ethers.formatUnits(rawBalance, decimals);
+                    
+                    renderBalanceUI(formattedBalance);
+                } catch (rpcErr) {
+                    console.error("Fatal Chain Synchronization Exception:", rpcErr);
+                    document.getElementById('usdcBalance').innerText = "0.00 USDC";
+                    document.getElementById('balanceStatus').innerText = "Connection Dropped. Please check wallet chain connection.";
+                    document.getElementById('balanceStatus').style.color = "#EF4444";
+                }
             }
         }
 
         function renderBalanceUI(balance) {
+            // UI dynamically renders parsed numeric on-chain metrics safely
             document.getElementById('usdcBalance').innerText = `$${parseFloat(balance).toFixed(2)} USDC`;
             document.getElementById('balanceStatus').innerText = "Arc Testnet Live Balance";
             document.getElementById('balanceStatus').style.color = "#34D399";
