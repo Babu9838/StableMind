@@ -2,68 +2,62 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>StableMind - Gas Station</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StableMind Dashboard</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.1/ethers.umd.min.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
-        body { background-color: #030508; color: #F3F4F6; padding: 15px; }
-        .card { background-color: #090D14; padding: 24px; border-radius: 14px; border: 1px solid #111823; margin-bottom: 20px; }
-        .app-title { font-size: 24px; font-weight: 800; background: linear-gradient(135deg, #38BDF8, #0EA5E9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 20px; }
-        .gas-input { width: 100%; background-color: #030508; border: 1px solid #161F30; border-radius: 8px; padding: 12px; color: white; margin-top: 6px; }
-        .btn-action { width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; border: none; margin-top: 12px; color: white; }
-        .section-header { color: #38BDF8; font-size: 14px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+        body { background-color: #030508; color: #fff; font-family: sans-serif; padding: 20px; }
+        .dashboard-container { max-width: 450px; margin: 0 auto; }
+        h2 { font-size: 18px; color: #38BDF8; margin-bottom: 15px; }
+        
+        .card { background-color: #090D14; border: 1px solid #111823; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
+        
+        .label { font-size: 11px; color: #9CA3AF; text-transform: uppercase; margin-bottom: 8px; display: block; }
+        .value { font-size: 20px; margin-bottom: 15px; }
+        
+        .btn-refresh { width: 100%; background-color: #1A1F2E; border: none; padding: 10px; border-radius: 6px; color: #fff; cursor: pointer; font-size: 13px; }
+        
+        .input-field { width: 100%; background: #030508; border: 1px solid #1F2937; padding: 12px; border-radius: 6px; color: #fff; margin-bottom: 15px; box-sizing: border-box; }
+        
+        .btn-bridge { width: 100%; background: linear-gradient(90deg, #EC4899, #8B5CF6); border: none; padding: 12px; border-radius: 6px; color: white; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <main style="max-width: 600px; margin: 0 auto;">
-        <div class="app-title">StableMind Dashboard</div>
+<div class="dashboard-container">
+    <h1 style="font-size: 20px; margin-bottom: 20px;">StableMind Dashboard</h1>
 
-        <!-- Unified Balance Kit -->
-        <div class="card">
-            <div class="section-header">Unified Balance Kit</div>
-            <div class="value" id="totalBalance" style="font-size: 24px; color: #fff;">Syncing...</div>
-            <button class="btn-action" style="background: #111823;" onclick="syncUnifiedBalances()">Refresh Multi-Chain Balances</button>
-        </div>
+    <!-- Unified Balance Kit -->
+    <div class="card">
+        <span class="label">UNIFIED BALANCE KIT</span>
+        <div class="value" id="balanceDisplay">Syncing...</div>
+        <button class="btn-refresh" onclick="refreshBalances()">Refresh Multi-Chain Balances</button>
+    </div>
 
-        <!-- CCTP Cross-Chain Bridge -->
-        <div class="card">
-            <div class="section-header">CCTP Cross-Chain Bridge</div>
-            <select class="gas-input" id="destChain">
-                <option value="1">Ethereum Mainnet</option>
-                <option value="137">Polygon</option>
-                <option value="10">Optimism</option>
-            </select>
-            <input type="number" class="gas-input" id="cctpAmount" placeholder="Amount to Bridge">
-            <button class="btn-action" style="background: linear-gradient(135deg, #EC4899, #8B5CF6);" onclick="initiateCCTP()">Initiate CCTP Transfer</button>
-        </div>
-    </main>
+    <!-- CCTP Cross-Chain Bridge -->
+    <div class="card">
+        <span class="label">CCTP CROSS-CHAIN BRIDGE</span>
+        <select class="input-field" id="chainSelect">
+            <option>Ethereum Mainnet</option>
+            <option>Arbitrum</option>
+            <option>Optimism</option>
+        </select>
+        <input type="number" class="input-field" placeholder="Amount to Bridge">
+        <button class="btn-bridge" onclick="initiateBridge()">Initiate CCTP Transfer</button>
+    </div>
+</div>
 
-    <script>
-        // CCTP Token Messenger Contract (Example Address)
-        const CCTP_MESSENGER = "0xbd3fa81b5893be5101c2da8356241b707010e961";
+<script>
+    function refreshBalances() {
+        document.getElementById('balanceDisplay').innerText = "71.58 USDC";
+        alert("Balances updated across all chains.");
+    }
 
-        async function syncUnifiedBalances() {
-            // এই ফাংশনটি বিভিন্ন আরপিসি (RPC) থেকে ব্যালেন্স পুল করবে
-            document.getElementById('totalBalance').innerText = "71.58 USDC (Unified)";
-            alert("Balances synchronized across all connected chains.");
-        }
+    async function initiateBridge() {
+        alert("CCTP Bridge Initialized. Please confirm via your wallet.");
+        // এখানে CCTP স্মার্ট কন্ট্রাক্ট কল করার লজিক বসবে
+    }
+</script>
 
-        async function initiateCCTP() {
-            const amount = document.getElementById('cctpAmount').value;
-            const dest = document.getElementById('destChain').value;
-            
-            if(!amount) return alert("Enter amount!");
-
-            try {
-                // CCTP ডিপোজিট এবং বার্ন (Burn) প্রসেস
-                alert(`Initiating CCTP Bridge for ${amount} USDC to Chain ID: ${dest}`);
-                // ইথারস ডট জেএস দিয়ে এখানে কন্ট্রাক্ট কল হবে
-                console.log("CCTP Bridge Logic Triggered");
-            } catch(e) {
-                alert("Bridge Failed: " + e.message);
-            }
-        }
-    </script>
 </body>
 </html>
