@@ -4,17 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StableMind Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.1/ethers.umd.min.js"></script>
     <style>
         * { box-sizing: border-box; font-family: sans-serif; }
         body { background-color: #030508; color: #F3F4F6; padding: 15px; margin: 0; }
         .container { max-width: 450px; margin: 0 auto; }
         
-        /* Header */
         header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .logo-area { display: flex; align-items: center; gap: 10px; font-weight: bold; font-size: 20px; color: #38BDF8; }
-        .wallet-chip { background: #1E293B; padding: 6px 12px; border-radius: 20px; font-size: 12px; border: 1px solid #334155; }
+        
+        /* Real Connect Button */
+        #connectBtn { background: #1E293B; padding: 8px 15px; border-radius: 8px; color: white; border: 1px solid #334155; cursor: pointer; font-size: 12px; }
 
-        /* Cards */
         .card { background-color: #090D14; border: 1px solid #111823; padding: 20px; border-radius: 14px; margin-bottom: 15px; }
         .label { font-size: 10px; color: #9CA3AF; text-transform: uppercase; margin-bottom: 8px; display: block; font-weight: bold; }
         .value { font-size: 24px; font-weight: bold; color: #38BDF8; margin-bottom: 5px; }
@@ -29,34 +30,31 @@
 <body>
 
 <div class="container">
-    <!-- Header -->
     <header>
-        <div class="logo-area">
-            <span>⋒</span> StableMind
-        </div>
-        <div class="wallet-chip">0xef08...52de</div>
+        <div class="logo-area"><span>⋒</span> StableMind</div>
+        <!-- Real Connect Button -->
+        <button id="connectBtn" onclick="connectWallet()">Connect Wallet</button>
     </header>
 
-    <!-- Total USDC Balance -->
     <div class="card">
-        <span class="label">Total USDC Balance</span>
+        <span class="label">TOTAL USDC BALANCE</span>
         <div class="value">71.58 USDC</div>
         <div class="sub-text">Arc Testnet Sync Success</div>
-        <div class="label" style="margin-top:10px;">Arc USDC Contract Address</div>
+        <span class="label">ARC USDC CONTRACT ADDRESS</span>
         <div style="font-size: 11px; color: #6B7280; background: #030508; padding: 8px; border-radius: 5px; word-break: break-all;">0x3600000000000000000000000000000000000000</div>
     </div>
 
-    <!-- Circle Programmable Wallet -->
+    <!-- Circle Section -->
     <div class="card">
-        <span class="label">Circle Programmable Wallet</span>
+        <span class="label">CIRCLE PROGRAMMABLE WALLET</span>
         <input type="text" class="input-field" placeholder="User Session Token">
         <input type="password" class="input-field" placeholder="Encryption Key">
         <button class="btn-main btn-blue">Create / Login Circle Wallet</button>
     </div>
 
-    <!-- Unified Balance Kit & CCTP Bridge -->
+    <!-- Unified & CCTP -->
     <div class="card">
-        <span class="label">Unified Balance Kit</span>
+        <span class="label">UNIFIED BALANCE KIT</span>
         <button class="btn-main" style="background:#111823; margin-bottom:20px;">Refresh Multi-Chain Balances</button>
         
         <span class="label">CCTP CROSS-CHAIN BRIDGE</span>
@@ -67,13 +65,28 @@
         <input type="number" class="input-field" placeholder="Amount to Bridge">
         <button class="btn-main btn-gradient">Initiate CCTP Transfer</button>
     </div>
-
-    <!-- Gas Station -->
-    <div class="card">
-        <span class="label">Gas Station (Abstraction)</span>
-        <button class="btn-main btn-blue">Execute Gasless Deposit</button>
-    </div>
 </div>
+
+<script>
+    async function connectWallet() {
+        if (window.ethereum) {
+            try {
+                // ওয়ালেট কানেক্ট পপআপ
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                const walletAddress = accounts[0];
+                
+                // বাটন টেক্সট আপডেট
+                const btn = document.getElementById('connectBtn');
+                btn.innerText = walletAddress.substring(0, 6) + "..." + walletAddress.substring(38);
+                btn.style.borderColor = "#34D399";
+            } catch (error) {
+                alert("Connection rejected by user.");
+            }
+        } else {
+            alert("Please install MetaMask or a Web3 wallet!");
+        }
+    }
+</script>
 
 </body>
 </html>
