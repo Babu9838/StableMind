@@ -107,7 +107,7 @@
         let userAddress = null;
         let circleSdk = null;
 
-        // 📝 Configurations
+        // 📝 Core Constants 
         const ARC_RPC_ENDPOINT = "https://rpc-testnet.arc.network";
         const USDC_CONTRACT_ADDRESS = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"; 
         const ERC20_MINIMAL_ABI = [
@@ -115,7 +115,7 @@
             "function decimals() view returns (uint8)"
         ];
 
-        // 🚀 SMART CONNECTION GATEWAY
+        // 🚀 SMART CONNECTION HUB
         async function triggerUniversalWallet() {
             try {
                 if (window.ethereum) {
@@ -146,57 +146,55 @@
                 provider.on("disconnect", () => { resetWalletUI(); });
 
             } catch (err) {
-                console.error("Connection Interface Error:", err);
+                console.error("Interface Connect Error:", err);
                 const cleanUrl = window.location.href.replace(/^https?:\/\//, '');
                 window.location.href = "https://metamask.app.link/dapp/" + cleanUrl;
             }
         }
 
-        // 💰 100% REAL USDC DYNAMIC BALANCE FETCH 
+        // 💰 FAST ULTRA-STABLE REAL BALANCE RESOLVER
         async function fetchRealUSDCBalance(address) {
             document.getElementById('usdcBalance').innerText = "Syncing...";
-            document.getElementById('balanceStatus').innerText = "Querying Live Contract...";
+            document.getElementById('balanceStatus').innerText = "Connecting Arc Network Layer...";
             document.getElementById('balanceStatus').style.color = "#38BDF8";
 
-            let fetchSuccess = false;
-
-            // Method 1: Using connected global wallet provider instance
-            if (globalProvider) {
-                try {
-                    const usdcContract = new ethers.Contract(USDC_CONTRACT_ADDRESS, ERC20_MINIMAL_ABI, globalProvider);
-                    const rawBalance = await usdcContract.balanceOf(address);
-                    const decimals = await usdcContract.decimals().catch(() => 6);
-                    const formattedBalance = ethers.formatUnits(rawBalance, decimals);
-                    
-                    renderBalanceUI(formattedBalance);
-                    fetchSuccess = true;
-                } catch (e) {
-                    console.warn("Wallet runtime context query delayed, running direct node fallback...");
+            // Runtime Injection Check (Directly hits contract based on active connected session)
+            try {
+                let activeProvider = globalProvider;
+                if (!activeProvider) {
+                    activeProvider = new ethers.JsonRpcProvider(ARC_RPC_ENDPOINT);
                 }
-            }
 
-            // Method 2: Direct JSON-RPC connection overlay bypass (No simulation, purely reads actual on-chain data)
-            if (!fetchSuccess) {
+                const usdcContract = new ethers.Contract(USDC_CONTRACT_ADDRESS, ERC20_MINIMAL_ABI, activeProvider);
+                
+                // Fetch dynamic real state variables from contract
+                const [rawBalance, decimals] = await Promise.all([
+                    usdcContract.balanceOf(address),
+                    usdcContract.decimals().catch(() => 6)
+                ]);
+
+                const formattedBalance = ethers.formatUnits(rawBalance, decimals);
+                renderBalanceUI(formattedBalance);
+
+            } catch (error) {
+                console.warn("Primary processing stack delayed, fallback rendering active payload...");
+                // Instant fallback proxy block to fetch accurate state data natively
                 try {
-                    const rpcProvider = new ethers.JsonRpcProvider(ARC_RPC_ENDPOINT);
-                    const directContract = new ethers.Contract(USDC_CONTRACT_ADDRESS, ERC20_MINIMAL_ABI, rpcProvider);
+                    const fallbackRpc = new ethers.JsonRpcProvider(ARC_RPC_ENDPOINT);
+                    const fallbackContract = new ethers.Contract(USDC_CONTRACT_ADDRESS, ERC20_MINIMAL_ABI, fallbackRpc);
+                    const rawBalance = await fallbackContract.balanceOf(address);
                     
-                    const rawBalance = await directContract.balanceOf(address);
-                    const decimals = await directContract.decimals().catch(() => 6);
-                    const formattedBalance = ethers.formatUnits(rawBalance, decimals);
-                    
-                    renderBalanceUI(formattedBalance);
-                } catch (rpcErr) {
-                    console.error("Fatal Chain Synchronization Exception:", rpcErr);
+                    renderBalanceUI(ethers.formatUnits(rawBalance, 6));
+                } catch (failoverError) {
+                    console.error("Critical Connection Error:", failoverError);
                     document.getElementById('usdcBalance').innerText = "0.00 USDC";
-                    document.getElementById('balanceStatus').innerText = "Connection Dropped. Please check wallet chain connection.";
+                    document.getElementById('balanceStatus').innerText = "Sync delayed. Check Arc network parameters.";
                     document.getElementById('balanceStatus').style.color = "#EF4444";
                 }
             }
         }
 
         function renderBalanceUI(balance) {
-            // UI dynamically renders parsed numeric on-chain metrics safely
             document.getElementById('usdcBalance').innerText = `$${parseFloat(balance).toFixed(2)} USDC`;
             document.getElementById('balanceStatus').innerText = "Arc Testnet Live Balance";
             document.getElementById('balanceStatus').style.color = "#34D399";
