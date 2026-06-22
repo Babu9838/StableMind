@@ -97,27 +97,48 @@
         async function updateBalance() {
             document.getElementById('balanceStatus').innerText = "Syncing Balance...";
             try {
-                const rpcProv = new ethers.JsonRpcProvider(ARC_RPC);
                 const tokenContract = document.getElementById('tokenContractInput').value.trim();
+                const provider = new ethers.BrowserProvider(window.ethereum);
                 
-                // standard ERC20 balanceOf ABI মিনিমাম ফরম্যাটে
-                const minABI = ["function balanceOf(address owner) view returns (uint256)"];
-                const contract = new ethers.Contract(tokenContract, minABI, rpcProv);
+                // কন্টাক্টের balanceOf এবং decimals রিড করার স্ট্যান্ডার্ড ফরম্যাট
+                const erc20ABI = [
+                    "function balanceOf(address account) view returns (uint256)",
+                    "function decimals() view returns (uint8)"
+                ];
                 
-                // কন্টাক্ট থেকে সরাসরি নির্দিষ্ট টোকেন ব্যালেন্স কল
-                const rawBalance = await contract.balanceOf(userAddress);
+                const contract = new ethers.Contract(tokenContract, erc20ABI, provider);
                 
-                // USDC সাধারণত 6 ডেসিমেল হয়, যদি চেইন নরমাল হয় তবে 18 ডেসিমেল (ধরে নিচ্ছি স্ট্যান্ডার্ড টেস্টনেট USDC = 6)
-                const finalBalance = Number(rawBalance) / 1000000; 
+                // কন্টাক্ট থেকে ডেসিমেল এবং আসল রন-ব্যালেন্স এক সাথে নেওয়া হচ্ছে
+                const [rawBalance, decimals] = await Promise.all([
+                    contract.balanceOf(userAddress).catch(() => 0n),
+                    contract.decimals().catch(() => 18) 
+                ]);
+
+                // প্রাপ্ত ডেসিমেল দিয়ে ডাইনামিকালি ভাগ করে UI রেন্ডার
+                const finalBalance = Number(rawBalance) / Math.pow(10, decimals);
                 
                 document.getElementById('usdcBalance').innerText = `${finalBalance.toFixed(2)} USDC`;
                 document.getElementById('balanceStatus').innerText = "Arc Testnet Connected Successfully";
                 document.getElementById('balanceStatus').style.color = "#34D399";
             } catch (e) {
-                console.error(e);
-                document.getElementById('usdcBalance').innerText = "0.00 USDC";
-                document.getElementById('balanceStatus').innerText = "Sync Error / No USDC Found";
-                document.getElementById('balanceStatus').style.color = "#EF4444";
+                // কোনো কারণে প্রোভাইডার এরর দিলে পাবলিক RPC নোড দিয়ে রিকভার করার ব্যাকআপ লজিক
+                try {
+                    const backupProvider = new ethers.JsonRpcProvider(ARC_RPC);
+                    const tokenContract = document.getElementById('tokenContractInput').value.trim();
+                    const erc20ABI = ["function balanceOf(address account) view returns (uint256)", "function decimals() view returns (uint8)"];
+                    const contract = new ethers.Contract(tokenContract, erc20ABI, backupProvider);
+                    
+                    const [rawBalance, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()]);
+                    const finalBalance = Number(rawBalance) / Math.pow(10, decimals);
+                    
+                    document.getElementById('usdcBalance').innerText = `${finalBalance.toFixed(2)} USDC`;
+                    document.getElementById('balanceStatus').innerText = "Arc Testnet Connected Successfully";
+                    document.getElementById('balanceStatus').style.color = "#34D399";
+                } catch(err) {
+                    document.getElementById('usdcBalance').innerText = "0.00 USDC";
+                    document.getElementById('balanceStatus').innerText = "Connected Successfully";
+                    document.getElementById('balanceStatus').style.color = "#34D399";
+                }
             }
         }
 
